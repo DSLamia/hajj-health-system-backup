@@ -1,10 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import pandas as pd
 import requests
 from supabase import create_client, Client
 from model_handler import predict_logic
-
+import os
 app = Flask(__name__)
 CORS(app)
 
