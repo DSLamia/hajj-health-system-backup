@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        .login-body { font-family: 'Tajawal', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: #2c3e50; background-image: url('makk.PNG'); background-size: cover; background-position: center; position: relative; }
+        .login-body { font-family: 'Tajawal', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: #2c3e50; background-image: url('/static/makk.PNG'); background-size: cover; background-position: center; position: relative; }
         .login-container { position: relative; z-index: 2; width: 100%; max-width: 480px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(15px); border-radius: 40px; padding: 40px; box-shadow: 0 25px 50px rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.3); }
         .input-group { margin-bottom: 20px; text-align: right; }
         .input-group label { display: block; margin-bottom: 8px; font-weight: 900; color: #000000; font-size: 18px; }
@@ -50,15 +50,15 @@
         .f-item .temperature { font-weight: 900; font-size: 28px; }
         .risk-section { margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.15); border-radius: 20px; color: #000; }
         .risk-bar { width: 100%; height: 14px; background: linear-gradient(to left, #4ade80, #facc15, #fb923c, #ef4444); border-radius: 10px; position: relative; margin: 20px 0; }
-        .risk-pointer { width: 26px; height: 26px; background: #fff; border: 4px solid #333; border-radius: 50%; position: absolute; top: -6px; }
+        .risk-pointer { width: 26px; height: 26px; background: #fff; border: 4px solid #333; border-radius: 50%; position: absolute; top: -6px; transition: right 0.5s ease-in-out; }
         .recommendations-panel { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 25px; border-radius: 35px; border: 1px solid rgba(255, 255, 255, 0.3); }
 
         #emergencyBar { position: fixed; bottom: 0; left: 0; width: 100%; height: 2cm; background: linear-gradient(90deg, rgba(179, 0, 0, 0.8), rgba(255, 50, 50, 0.7)); backdrop-filter: blur(8px); color: white; z-index: 9999; display: none; align-items: center; overflow: hidden; border-top: 2px solid rgba(255, 215, 0, 0.5); box-shadow: 0 -5px 15px rgba(0,0,0,0.2); }
         .marquee-content { display: flex; white-space: nowrap; animation: marquee 30s linear infinite; }
         .emergency-unit { display: flex; align-items: center; padding: 0 60px; }
         .emergency-unit i { font-size: 1.2rem; margin-left: 10px; color: #ffd700; }
-        .unit-text { font-size: 1.1rem; font-weight: 700; opacity: 0.95; }
-        .unit-number { font-size: 1.4rem; font-weight: 900; margin-right: 12px; background: rgba(255, 255, 255, 0.2); padding: 2px 10px; border-radius: 8px; }
+        .marquee-content span.unit-text { font-size: 1.1rem; font-weight: 700; opacity: 0.95; color: white; }
+        .marquee-content span.unit-number { font-size: 1.4rem; font-weight: 900; margin-right: 12px; background: rgba(255, 255, 255, 0.2); padding: 2px 10px; border-radius: 8px; color: white; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
     </style>
 </head>
@@ -121,7 +121,7 @@
     </div>
 
     <div id="mainApp">
-        <video id="bgVideo" autoplay loop muted playsinline><source src="sun.mp4" type="video/mp4"></video>
+        <video id="bgVideo" autoplay loop muted playsinline><source src="/static/sun.mp4" type="video/mp4"></video>
         <div class="overlay"></div>
         <div class="main-container">
             <header class="mecca-header">
@@ -136,7 +136,7 @@
             </header>
             <div class="welcome-card">
                 <h1>تقبل الله طاعتك</h1>
-                <div class="user-details"><span id="uNameDisplay"></span> | <span id="uPhoneDisplay"></span></div>
+                <div class="user-details"><span id="uNameDisplay"></span></div>
             </div>
             <div class="prayer-title"><i class="fas fa-mosque"></i> مواقيت الصلاة</div>
             <div class="prayer-grid">
@@ -150,14 +150,14 @@
                 <div class="weather-panel">
                     <div class="temp-display">
                         <div class="large-temp" id="tempValue">--°</div>
-                        <div class="weather-desc" id="weatherStatus">--</div>
+                        <div class="weather-desc" id="weatherStatus">صافي ومستقر</div>
                     </div>
                     <h4 style="font-weight:900;"><i class="fas fa-clock"></i> توقعات الساعات القادمة</h4>
                     <div class="forecast-scroll" id="hourlyForecast"></div>
                     <div class="risk-section">
-                        <div class="risk-title">تنبؤ مستوى الخطر:</div>
+                        <div class="risk-title" style="font-weight: 900;">تنبؤ مستوى الخطر الإسعافي:</div>
                         <div class="risk-bar"><div class="risk-pointer" id="riskPointer"></div></div>
-                        <div id="riskLabel">جاري التحليل...</div>
+                        <div id="riskLabel" style="font-weight: 900;">جاري التحليل...</div>
                     </div>
                 </div>
                 <div class="recommendations-panel"><div id="dynamicRec">جاري التجهيز...</div></div>
@@ -176,16 +176,11 @@
 const _supabase = supabase.createClient(
     'https://rmpmbnmmgxsbxcvcbkwb.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc',
-    {
-        auth: {
-            persistSession: false
-        }
-    }
+    { auth: { persistSession: false } }
 );
 
 let isLoginMode = false;
 
-// دالة التبديل بين تسجيل الدخول وإنشاء الحساب
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
     const registerFields = document.getElementById('registerFields');
@@ -203,7 +198,6 @@ function toggleAuthMode() {
     }
 }
 
-// دالة إظهار خيارات الأمراض المزمنة
 function toggleDiseaseInput(show) {
     const container = document.getElementById('diseaseDetailContainer');
     if (container) {
@@ -252,28 +246,47 @@ async function getWeather() {
     } catch(e) {}
 }
 
+// تعديل جلب التنبؤ ليكون ديناميكياً بدون دمج الـ Localhost الثابت
 async function fetchPrediction(userId) {
     try {
-        const res = await fetch('http://127.0.0.1:5000/api/predict', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: userId })
+        const res = await fetch('/api/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId, target_audience: 'pilgrim' })
         });
         const d = await res.json();
         if(d.status === "success") {
             const risk = d.results.risk_level;
-            document.getElementById('riskLabel').innerText = "تنبؤ النظام: " + risk;
+            document.getElementById('riskLabel').innerText = "تنبؤ نظام مكة الذكي: " + risk;
+
             const ptr = document.getElementById('riskPointer');
-            ptr.style.right = (risk==='Low'?'5%':(risk==='Moderate'?'50%':'90%'));
-            let h = `<h3 style="color:#8B4513; margin-bottom:15px;"><i class="fas fa-lightbulb"></i> توصية ذكية</h3>`;
-            d.results.recommendation.forEach((l, i) => h += `<p style="${i===0?'font-weight:900; color:#8b0000;':''} margin-bottom:10px;">• ${l}</p>`);
+            if (risk === 'Low') {
+                ptr.style.right = '5%';
+                document.getElementById('riskLabel').style.color = 'green';
+            } else if (risk === 'Moderate' || risk === 'Medium') {
+                ptr.style.right = '50%';
+                document.getElementById('riskLabel').style.color = 'orange';
+            } else {
+                ptr.style.right = '90%';
+                document.getElementById('riskLabel').style.color = 'red';
+            }
+
+            let h = `<h3 style="color:#8B4513; margin-bottom:15px;"><i class="fas fa-lightbulb"></i> توصية وقائية مخصصة لك</h3>`;
+
+            if(Array.isArray(d.results.recommendation)) {
+                d.results.recommendation.forEach((l, i) => {
+                    h += `<p style="${i===0?'font-weight:900; color:#8b0000;':''} margin-bottom:10px;">• ${l}</p>`;
+                });
+            } else {
+                h += `<p style="font-weight:900; color:#8b0000;">• ${d.results.recommendation}</p>`;
+            }
             document.getElementById('dynamicRec').innerHTML = h;
         }
-    } catch(e) { console.log("Flask offline"); }
+    } catch(e) { console.log("Flask API Server Offline or Unreachable"); }
 }
 
 function showMainApp(user) {
-    document.getElementById('uNameDisplay').innerText = "مرحباً بكِ، " + (user.full_name || "ضيفنا العزيز");
-    document.getElementById('uPhoneDisplay').innerText = "";
+    document.getElementById('uNameDisplay').innerText = "مرحباً بك، " + (user.full_name || "ضيفنا الكريم");
 
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
@@ -283,8 +296,10 @@ function showMainApp(user) {
     setInterval(updateDateTime, 1000);
     fetchPrayerTimes();
     getWeather();
-    // التأكد من استخدام المعرف الصحيح للحاج
-    fetchPrediction(user.pilgrim_id || user.id);
+
+    // استخدام المفتاح الديناميكي الصواب
+    const idToUse = user.pilgrim_id || user.id;
+    fetchPrediction(idToUse);
 }
 
 document.getElementById('entryBtn').addEventListener('click', async () => {
@@ -292,7 +307,7 @@ document.getElementById('entryBtn').addEventListener('click', async () => {
     const phone = document.getElementById('userPhone').value;
 
     if (!phone || !/^05\d{8}$/.test(phone)) {
-        alert("يرجى إدخال رقم جوال صحيح يبدأ بـ 05");
+        alert("يرجى إدخال رقم جوال صحيح يبدأ بـ 05 ويتكون من 10 أرقام");
         return;
     }
 
@@ -308,12 +323,12 @@ document.getElementById('entryBtn').addEventListener('click', async () => {
             return;
         }
         if (!user) {
-            alert("عفواً، هذا الرقم غير مسجل.");
+            alert("عفواً، هذا الرقم غير مسجل في النظام.");
         } else {
             showMainApp(user);
         }
     } else {
-        if (!name) { alert("يرجى إدخال الاسم"); return; }
+        if (!name) { alert("يرجى إدخال الاسم الكامل أولاً"); return; }
 
         let { data: existing } = await _supabase
             .from('profiles')
@@ -322,7 +337,7 @@ document.getElementById('entryBtn').addEventListener('click', async () => {
             .maybeSingle();
 
         if (existing) {
-            alert("هذا الرقم مسجل مسبقاً! سجل دخولك.");
+            alert("هذا الرقم مسجل مسبقاً! يرجى الانتقال لوضع تسجيل الدخول.");
             return;
         }
 
@@ -347,7 +362,7 @@ document.getElementById('entryBtn').addEventListener('click', async () => {
             .single();
 
         if (error) {
-            alert("فشل التسجيل: " + error.message);
+            alert("فشل في إتمام عملية التسجيل: " + error.message);
         } else {
             showMainApp(newUser);
         }
