@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام متابعة طقس مكة المكرمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { min-height: 100vh; overflow-x: hidden; position: relative; color: #000; background-color: #f4f1ea; }
+        #bgVideo { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(3px); z-index: -1; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
+
+        /* الهيدر */
+        .mecca-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); padding: 20px 40px; border-radius: 60px; margin-bottom: 30px; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+        .header-date { font-size: 1.1rem; font-weight: 700; color: #5d5442; }
+        .mecca-title { font-size: 2.5rem; font-weight: 900; color: #000; text-align: center; }
+        .mecca-title i { color: #8B4513; }
+        .mecca-time-box { text-align: left; }
+        .mecca-time { font-size: 2.2rem; font-weight: 800; background: rgba(0, 0, 0, 0.85); color: white; padding: 5px 30px; border-radius: 50px; display: inline-block; }
+
+        /* أوقات الصلاة */
+        .prayer-main-title { text-align: center; font-size: 2rem; font-weight: 900; color: #8B4513; margin-bottom: 15px; }
+        .prayer-section { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 30px; }
+        .prayer-card { background: rgba(255, 255, 255, 0.85); padding: 20px; border-radius: 30px; text-align: center; border-bottom: 5px solid #8B4513; }
+        .prayer-name { font-size: 1.2rem; font-weight: 800; margin-bottom: 5px; }
+        .prayer-time { font-size: 1.5rem; font-weight: 700; }
+
+        /* الشبكة الرئيسية */
+        .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+        .weather-card, .info-card { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); border-radius: 40px; padding: 30px; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); }
+        .weather-title { font-size: 1.3rem; font-weight: 800; color: #8B4513; margin-bottom: 15px; }
+        .big-temp { font-size: 5.5rem; font-weight: 900; line-height: 1; }
+        .weather-info-row { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+
+        /* الساعات القادمة */
+        .hourly-section { background: rgba(255, 255, 255, 0.75); border-radius: 40px; padding: 25px; margin-top: 30px; }
+        .hourly-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-top: 15px; }
+        .hour-item { text-align: center; background: #fff; border-radius: 20px; padding: 15px 10px; border: 1px solid rgba(0,0,0,0.05); }
+
+        /* التوصيات */
+        .recommendations-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 20px; color: #8B4513; display: flex; align-items: center; gap: 10px; }
+        .rec-item { background: rgba(255, 255, 255, 0.9); padding: 15px; border-radius: 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; border: 1px solid rgba(0,0,0,0.03); }
+        .rec-item i { font-size: 1.3rem; color: #8B4513; width: 30px; }
+        .rec-text { font-size: 0.95rem; font-weight: 600; line-height: 1.5; }
+
+        .back-btn-container { text-align: center; margin: 40px 0; }
+        .elegant-back-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #f5f5dc 0%, #ede6d3 100%); color: #5d5442; text-decoration: none; border-radius: 12px; font-weight: 700; border: 1px solid rgba(181, 166, 131, 0.3); }
+        .update-time { font-size: 0.8rem; color: #666; margin-top: 15px; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <video id="bgVideo" autoplay loop muted playsinline><source src="sun.mp4" type="video/mp4"></video>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <div class="mecca-header">
+            <div class="header-date" id="fullDate"></div>
+            <div class="mecca-title"><i class="fas fa-kaaba"></i> مكة المكرمة</div>
+            <div class="mecca-time-box"><div class="mecca-time" id="currentTime">00:00</div></div>
+        </div>
+
+        <div class="prayer-main-title"><i class="fas fa-clock"></i> اوقات الصلاة</div>
+        <div class="prayer-section">
+            <div class="prayer-card"><div class="prayer-name">الفجر</div><div class="prayer-time" id="fajr-time">--:--</div></div>
+            <div class="prayer-card"><div class="prayer-name">الشروق</div><div class="prayer-time" id="sunrise-time">--:--</div></div>
+            <div class="prayer-card"><div class="prayer-name">الظهر</div><div class="prayer-time" id="dhuhr-time">--:--</div></div>
+            <div class="prayer-card"><div class="prayer-name">العصر</div><div class="prayer-time" id="asr-time">--:--</div></div>
+            <div class="prayer-card"><div class="prayer-name">المغرب</div><div class="prayer-time" id="maghrib-time">--:--</div></div>
+            <div class="prayer-card"><div class="prayer-name">العشاء</div><div class="prayer-time" id="isha-time">--:--</div></div>
+        </div>
+
+        <div class="main-grid">
+            <div class="weather-card">
+                <div class="weather-title"><i class="fas fa-sun"></i> توقعات الطقس الآن - مكة المكرمة</div>
+                <div class="weather-info-row">
+                    <div>
+                        <div class="big-temp" id="mainTemp">--°</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #8B4513;" id="weatherDesc">جاري الجلب...</div>
+                    </div>
+                    <div style="text-align: left;" id="weatherDetails">
+                        <p><i class="fas fa-tint"></i> الرطوبة: <span id="humVal">--</span>%</p>
+                        <p><i class="fas fa-wind"></i> الرياح: <span id="windVal">--</span> كم/س</p>
+                        <p><i class="fas fa-weight-hanging"></i> الضغط: <span id="pressureVal">--</span> hPa</p>
+                        <p><i class="fas fa-eye"></i> الرؤية: <span id="visibilityVal">10</span> كم</p>
+                    </div>
+                </div>
+
+                <div class="hourly-section">
+                    <div style="font-weight: 800; font-size: 1.2rem;"><i class="fas fa-clock"></i> توقعات الساعات القادمة</div>
+                    <div class="hourly-grid" id="hourlyGrid">
+                        </div>
+                </div>
+                <div class="update-time" id="updateTime"></div>
+            </div>
+
+            <div class="info-card">
+                <div class="recommendations-title"><i class="fas fa-cloud-sun"></i> توصيات ذكية</div>
+                <div class="rec-item"><i class="fas fa-temperature-high"></i><div class="rec-text" id="rec1">جاري تحليل الحرارة...</div></div>
+                <div class="rec-item"><i class="fas fa-bottle-water"></i><div class="rec-text" id="rec2">شرب الماء بانتظام</div></div>
+                <div class="rec-item"><i class="fas fa-umbrella-beach"></i><div class="rec-text" id="rec3">استخدام مظلة شمسية</div></div>
+                <div class="rec-item"><i class="fas fa-bell"></i><div class="rec-text" id="rec4">تنبيه النظام: لا توجد تحذيرات</div></div>
+            </div>
+        </div>
+
+        <div class="back-btn-container">
+            <a href="Untitled 4.html" class="elegant-back-btn"><i class="fas fa-arrow-right"></i> العودة إلى الصفحة الرئيسية</a>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient(
+            'https://rmpmbnmmgxsbxcvcbkwb.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc'
+        );
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').innerText = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', hour12: false });
+            document.getElementById('fullDate').innerText = now.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        async function fetchAllData() {
+            try {
+                // 1. أوقات الصلاة
+                const resP = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Mecca&country=Saudi+Arabia&method=4');
+                const dP = await resP.json();
+                const t = dP.data.timings;
+                document.getElementById('fajr-time').innerText = t.Fajr;
+                document.getElementById('sunrise-time').innerText = t.Sunrise;
+                document.getElementById('dhuhr-time').innerText = t.Dhuhr;
+                document.getElementById('asr-time').innerText = t.Asr;
+                document.getElementById('maghrib-time').innerText = t.Maghrib;
+                document.getElementById('isha-time').innerText = t.Isha;
+
+                // 2. الطقس
+                const resW = await fetch('https://api.open-meteo.com/v1/forecast?latitude=21.4225&longitude=39.8262&current_weather=true&hourly=temperature_2m,relativehumidity_2m,surface_pressure,windspeed_10m&timezone=auto');
+                const dW = await resW.json();
+
+                const curr = dW.current_weather;
+                document.getElementById('mainTemp').innerText = Math.round(curr.temperature) + '°';
+                document.getElementById('windVal').innerText = Math.round(curr.windspeed);
+                document.getElementById('pressureVal').innerText = Math.round(dW.hourly.surface_pressure[0]);
+                document.getElementById('humVal').innerText = dW.hourly.relativehumidity_2m[0];
+                document.getElementById('weatherDesc').innerText = "أجواء مكة المكرمة";
+
+                // الساعات القادمة
+                const currentHour = new Date().getHours();
+                let hHtml = '';
+                for(let i = 1; i <= 6; i++) {
+                    const idx = currentHour + i;
+                    const temp = Math.round(dW.hourly.temperature_2m[idx]);
+                    hHtml += `<div class="hour-item"><div style="font-weight:700;">${(currentHour+i)%24}:00</div><div style="font-size:1.3rem; font-weight:800; color:#8B4513;">${temp}°</div><div>☀️</div></div>`;
+                }
+                document.getElementById('hourlyGrid').innerHTML = hHtml;
+
+                // 3. التوصيات من Flask أو بناءً على الحرارة
+                const temp = curr.temperature;
+                document.getElementById('rec1').innerText = temp > 35 ? `🌡️ الحرارة ${Math.round(temp)}° - تجنب الشمس` : `🌤️ الحرارة ${Math.round(temp)}° - أجواء مناسبة`;
+
+                // 4. جلب تنبيه سوبابيس
+                const { data: notes } = await _supabase.table('notification').select('*').order('timestamp', { ascending: false }).limit(1);
+                if(notes && notes.length > 0) document.getElementById('rec4').innerHTML = `⚠️ <b style="color:#d9534f;">تنبيه:</b> ${notes[0].message || notes[0].preventive_recommendation}`;
+
+                document.getElementById('updateTime').innerText = "آخر تحديث: " + new Date().toLocaleTimeString('ar-SA');
+
+            } catch (e) { console.error("Error fetching data", e); }
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+        fetchAllData();
+        setInterval(fetchAllData, 600000);
+    </script>
+</body>
+</html>

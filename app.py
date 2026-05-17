@@ -1,0 +1,157 @@
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import pandas as pd
+import requests
+from supabase import create_client, Client
+from model_handler import predict_logic
+
+app = Flask(__name__)
+CORS(app)
+
+# إعدادات سوبابيس
+SUPABASE_URL = "https://rmpmbnmmgxsbxcvcbkwb.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+WEATHER_API_KEY = "0aac0c7a97816848748a258ddcb625b0"
+FEATURES = ['Age Group_Encoded', 'Number of pilgrims', 'Temperature_C',
+            'Humidity_Pct', 'Wind_Speed_kmh', 'Hospitals',
+            'Health_Centers', 'Bed_Capacity', 'Staff_Count', 'Ambulances',
+            'Expected_Chronic_Count']
+
+
+def get_makkah_weather():
+    url = f"https://api.openweathermap.org/data/2.5/weather?q=Mecca,SA&appid={WEATHER_API_KEY}&units=metric"
+    try:
+        res = requests.get(url, timeout=5).json()
+        if res.get("cod") == 200:
+            return res['main']['temp'], res['main']['humidity'], res['wind']['speed'] * 3.6
+    except:
+        pass
+    return 22.6, 45.0, 10.0
+
+
+@app.route('/api/predict', methods=['POST'])
+def predict():
+    try:
+        data = request.json
+        u_id = data.get('user_id', 'GUEST')
+        # تحديد الجمهور المستهدف: 'officer' للمسؤولين أو 'pilgrim' للحجاج
+        target = data.get('target_audience', 'pilgrim')
+        occ_beds = data.get('occupied_beds', 0)
+
+        user_data = {}
+        disease_name = 'none'
+
+        # 1. جلب الموارد الصحيةِ
+        SPECIFIC_ID = "4e13e939-e91e-4eb0-abe4-2bd111445112"
+        res_query = supabase.table("health_resources").select("*").eq("id", SPECIFIC_ID).execute()
+
+        if res_query.data:
+            resources = res_query.data[0]
+        else:
+            # بيانات احتياطية في حال فشل الاتصال
+            resources = {
+                'total_beds': 10240,
+                'occupied_beds': 0,
+                'hospitals_count': 36,
+                'health_centers_count': 192,
+                'staff_count': 50000,
+                'ambulances': 900
+            }
+
+        bed_cap = resources.get('total_beds', 10240)
+
+        # 2. تحديد بيانات المدخلات بناءً على نوع المستخدم
+        if target == 'officer':
+            # إذا كان موظفاً: نستخدم قيم افتراضية للفرد لأن التركيز على إحصائيات النظام ككل
+            age_enc = 1  # Adult
+            has_chronic = False
+            role = 'officer'
+            disease_name = 'none'
+        else:
+            # إذا كان حاجاً: نبحث عن بياناته الشخصية في جدول البروفايل
+            try:
+                user_res = supabase.table("profiles").select("*").eq("pilgrim_id", u_id).single().execute()
+                user_data = user_res.data
+                age_map = {"1-15": 0, "16-60": 1, "61+": 2}
+                age_enc = age_map.get(user_data['age_group'], 1)
+                has_chronic = user_data.get('has_chronic', False)
+                role = 'pilgrim'
+            except Exception:
+                # قيم افتراضية إذا لم يوجد البروفايل
+                age_enc, has_chronic, role = 1, False, 'pilgrim'
+
+        # 3. جلب بيانات الطقس الحالية
+        temp, hum, wind = get_makkah_weather()
+        temp = round(temp)
+        # تحويل حالة الأمراض المزمنة لرقم يدخل في الموديل
+        chronic_input_value = 100 if has_chronic else 0
+
+        # 4. تجهيز المصفوفة النهائية للمودل
+        raw_input = [
+            age_enc,
+            1800000,
+            temp,
+            hum,
+            wind,
+            resources['hospitals_count'],
+            resources['health_centers_count'],
+            bed_cap,
+            resources['staff_count'],
+            resources['ambulances'],
+            chronic_input_value
+        ]
+
+        # تحويل البيانات لـ DataFrame
+        input_df = pd.DataFrame([raw_input], columns=FEATURES)
+        disease_name = user_data.get('disease_detail', 'none')
+        # 5. استدعاء المودل وحساب النتائج (تمرير bed_capacity لحساب نسبة الإشغال)
+        results = predict_logic(
+            input_df,
+            role,
+            has_chronic,
+            disease_detail=disease_name,
+            bed_capacity=bed_cap,
+            occupied_beds=occ_beds
+        )
+        # 6. حفظ التنبؤ في جدول predictionsً
+        try:
+            supabase.table("predictions").insert({
+                "user_id": u_id,
+                "heatstroke_predicted": int(results['heatstroke']),
+                "risk_level": results['risk_level'],
+                "occupied_beds": occ_beds
+            }).execute()
+        except Exception as save_error:
+            print(f"Log: Prediction not saved to DB: {save_error}")
+
+        # إرجاع النتيجة النهائية للواجهة
+        return jsonify({
+            "status": "success",
+            "results": results,
+            "weather": {"temp": temp, "humidity": hum}
+        })
+
+    except Exception as e:
+        print(f"Critical Error in Predict: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@app.route('/api/send-report', methods=['POST'])
+def send_report():
+    try:
+        data = request.json
+        report_data = {
+            "location_name": data.get('location'),
+            "readiness_level": data.get('type', 'General'),
+            "status": "Active"
+        }
+        supabase.table("emergency_team").insert(report_data).execute()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

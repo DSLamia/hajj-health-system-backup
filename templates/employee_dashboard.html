@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام مركز الطوارئ - إدارة مكة</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Cairo:wght@400;700;900&display=swap');
+        :root { --text-main: #000000; --card-bg: rgba(255, 255, 255, 0.9); --border-black: 2px solid #000000; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { min-height: 100vh; background-image: url('makk.PNG'); background-size: cover; background-position: center; background-attachment: fixed; color: var(--text-main); padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .page-section { display: none; }
+        .active-section { display: block; animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card-box { background: var(--card-bg); border: var(--border-black); padding: 25px; margin-bottom: 20px; backdrop-filter: blur(10px); overflow-x: auto; }
+        .section-header { background: #000; color: #fff; padding: 8px 20px; display: inline-block; margin-bottom: 15px; font-weight: 900; font-size: 18px; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .metric-card { background: var(--card-bg); border: var(--border-black); padding: 15px; text-align: center; }
+        .metric-label { font-weight: 900; font-size: 15px; margin-bottom: 5px; color: #000; }
+        .metric-value { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 900; color: #000; }
+        .form-control { width: 100%; padding: 12px; border: 2px solid #000; font-weight: 900; font-size: 16px; background: #fff; outline: none; }
+        table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; min-width: 600px; }
+        th { background: #000; color: #fff; padding: 12px; border: 1px solid #000; font-weight: 900; }
+        td { padding: 12px; border: 1px solid #000; text-align: center; font-weight: 900; font-size: 14px; }
+        .btn-black { background: #000; color: #fff; border: 2px solid #000; padding: 12px 25px; font-weight: 900; cursor: pointer; transition: 0.3s; }
+        .btn-black:hover { background: #fff; color: #000; }
+        .list-item { border-bottom: 1px solid rgba(0,0,0,0.2); padding: 12px 0; font-weight: 900; display: flex; justify-content: space-between; }
+        .center-wrapper { display: flex; justify-content: center; align-items: center; width: 100%; margin-top: 25px; clear: both; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="homeSection" class="page-section active-section">
+        <h1 style="text-align: center; font-family: 'Unbounded'; margin-bottom: 30px; font-weight: 900;">نظام إدارة مكة الذكي - مركز الطوارئ</h1>
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="metric-label">المخاطر</div><div id="riskValue" class="metric-value">--</div></div>
+            <div class="metric-card"><div class="metric-label">الكثافة</div><div id="densityValue" class="metric-value">Normal</div></div>
+            <div class="metric-card"><div class="metric-label">الرطوبة</div><div id="humidityValue" class="metric-value">--%</div></div>
+            <div class="metric-card"><div class="metric-label">الحرارة</div><div id="tempValue" class="metric-value">--°C</div></div>
+        </div>
+        <div class="card-box" style="border-right: 10px solid #8b0000;">
+            <div class="section-header" style="background: #8b0000;">توجيهات الميدان النشطة</div>
+            <div id="emergencyDirections"><div class="list-item">جاري تحليل البيانات...</div></div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+            <button class="btn-black" onclick="togglePage('reportFormSection')">تقديم تقرير</button>
+            <button class="btn-black" onclick="togglePage('reportsListSection')">التقارير الحالية</button>
+            <button class="btn-black" onclick="togglePage('statsSection')">الإحصائيات</button>
+        </div>
+    </div>
+
+    <div id="reportFormSection" class="page-section">
+        <div class="card-box" style="max-width: 600px; margin: 0 auto;">
+            <div class="section-header">رفع بلاغ ميداني</div>
+            <div style="margin-bottom:15px">
+                <label style="font-weight:900">نوع البلاغ</label>
+                <select id="repType" class="form-control">
+                    <option value="طبية">حالة طبية</option>
+                    <option value="ازدحام مروري/بشري">ازدحام مروري/بشري</option>
+                    <option value="أخرى">أخرى</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px">
+                <label style="font-weight:900">الموقع</label>
+                <select id="repLoc" class="form-control">
+                    <option value="مشعر منى">مشعر منى</option>
+                    <option value="مزدلفة">مزدلفة</option>
+                    <option value="عرفات">عرفات</option>
+                    <option value="جسر الجمرات">جسر الجمرات</option>
+                    <option value="ساحات الحرم">ساحات الحرم</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px">
+                <label style="font-weight:900">الوصف</label>
+                <textarea id="repDesc" class="form-control" rows="3"></textarea>
+            </div>
+            <button class="btn-black" style="width:100%" onclick="submitReport()">إرسال</button>
+            <button class="btn-black" style="width:100%; margin-top:10px; background:#666" onclick="togglePage('homeSection')">رجوع</button>
+        </div>
+    </div>
+
+    <div id="statsSection" class="page-section">
+        <h1 style="text-align: center; font-family: 'Unbounded'; margin-bottom: 30px; font-weight: 900;">مركز الإحصائيات الميدانية</h1>
+        <div class="card-box">
+            <div class="section-header">تحديث حالة الأسرة المتاحة</div>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
+                <label style="font-weight: 900;">عدد الأسرة المشغولة:</label>
+                <input type="number" id="bedInput" class="form-control" style="width: 120px;" value="120">
+                <button class="btn-black" onclick="updateBedStats()">تحديث</button>
+            </div>
+        </div>
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="metric-label">إجمالي الحجاج</div><div class="metric-value">1.8M</div></div>
+            <div class="metric-card"><div class="metric-label">البلاغات النشطة</div><div id="activeReportsLabel" class="metric-value">0</div></div>
+            <div class="metric-card"><div class="metric-label">أسرة شاغرة</div><div id="availBeds" class="metric-value" style="color: green;">--</div></div>
+            <div class="metric-card"><div class="metric-label">نسبة الإشغال</div><div id="occupancyPerc" class="metric-value">--%</div></div>
+        </div>
+        <div class="center-wrapper">
+            <button class="btn-black" onclick="togglePage('homeSection')">العودة للرئيسية</button>
+        </div>
+    </div>
+
+    <div id="reportsListSection" class="page-section">
+        <h1 style="text-align: center; font-family: 'Unbounded'; margin-bottom: 30px; font-weight: 900;">التقارير الميدانية الحالية</h1>
+        <div class="card-box">
+            <table id="repTable">
+                <thead>
+                    <tr>
+                        <th>النوع</th>
+                        <th>الموقع</th>
+                        <th>الوصف</th>
+                        <th>الوقت</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="center-wrapper">
+            <button class="btn-black" onclick="togglePage('homeSection')">العودة للرئيسية</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const _supabase = supabase.createClient(
+    'https://rmpmbnmmgxsbxcvcbkwb.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc'
+);
+
+function togglePage(pageId) {
+    document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active-section'));
+    document.getElementById(pageId).classList.add('active-section');
+    if(pageId === 'reportsListSection') fetchReportsFromDB();
+}
+
+async function fetchWeatherForStaff() {
+    try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=21.4225&longitude=39.8262&current_weather=true&hourly=relative_humidity_2m');
+        const data = await res.json();
+        document.getElementById('tempValue').innerText = data.current_weather.temperature + "°C";
+        document.getElementById('humidityValue').innerText = data.hourly.relative_humidity_2m[0] + "%";
+    } catch (e) { console.error("Weather error"); }
+}
+async function fetchGlobalPrediction() {
+    let occupied = parseInt(document.getElementById('bedInput').value) || 0;
+    try {
+        const { data: res } = await _supabase.from('health_resources').select('total_beds').limit(1).single();
+        const total = res ? res.total_beds : 10240;
+        const occRate = Math.round((occupied / total) * 100);
+
+        const response = await fetch('http://127.0.0.1:5000/api/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: 'OFFICER-01', target_audience: 'officer', bed_capacity: total, occupied_beds: occupied })
+        });
+        const d = await response.json();
+
+        if(d.status === "success") {
+            const results = d.results;
+            const riskEl = document.getElementById('riskValue');
+            riskEl.innerText = results.risk_level;
+
+            // تحديث لون كلمة المخاطر العلوية
+            riskEl.style.color = (results.risk_level === 'Low') ? 'green' : (results.risk_level === 'Moderate' ? 'orange' : 'red');
+
+            let rawRecommendation = results.recommendation;
+            let cleanRec = Array.isArray(rawRecommendation) ? rawRecommendation[0] : rawRecommendation;
+
+            cleanRec = cleanRec.replace(/.*نسبة الإشغال الحالية:.*%.\s*/g, '').replace(/.*حالة النظام مستقرة.\s*/g, '');
+
+            if (!cleanRec.trim()) {
+                cleanRec = results.risk_level === 'Low' ? "الوضع آمن، استمر في المراقبة الروتينية." : "يرجى اتخاذ إجراءات احترازية فوراً.";
+            }
+
+            // --- التعديل هنا لحل مشكلة كلمة "حرجة" ---
+            let statusText = "مستقرة";
+            let statusEmoji = "🟢";
+            let statusColor = "green";
+
+            if (results.risk_level === 'High') {
+                statusText = "حرجة";
+                statusEmoji = "🚨";
+                statusColor = "red";
+            } else if (results.risk_level === 'Moderate') {
+                statusText = "متوسطة الخطورة";
+                statusEmoji = "⚠️";
+                statusColor = "orange";
+            }
+
+            document.getElementById('emergencyDirections').innerHTML = `
+                <div class="list-item" style="color: ${statusColor}; font-weight: 900;">${statusEmoji} حالة النظام: ${statusText}</div>
+                <div class="list-item" style="color: #8b0000; font-weight: 900;">📊 نسبة الإشغال الفعلية: ${occRate}%</div>
+                <div class="list-item" style="background: #fdfdfd; padding: 12px; border-right: 5px solid #000; display: block; margin-top: 10px;">
+                    <strong style="color: #000;">📢 التوصية الميدانية:</strong><br>
+                    <span style="color: #444;">${cleanRec}</span>
+                </div>
+            `;
+        }
+    } catch (e) { console.log("Flask Offline"); }
+}
+
+async function submitReport() {
+    const type = document.getElementById('repType').value;
+    const loc = document.getElementById('repLoc').value;
+    const desc = document.getElementById('repDesc').value;
+    try {
+        const { error } = await _supabase.from('emergency_team').insert([{ location_name: loc, readiness_level: type, status: 'Active', description: desc }]);
+        if (error) throw error;
+        alert("تم إرسال البلاغ بنجاح");
+        loadInitialData();
+        togglePage('homeSection');
+    } catch (err) { alert("خطأ في قاعدة البيانات"); }
+}
+
+async function fetchReportsFromDB() {
+    try {
+        const { data, error } = await _supabase.from('emergency_team').select('*');
+        if (error) throw error;
+
+        const tbody = document.querySelector('#repTable tbody');
+        tbody.innerHTML = '';
+
+        data.forEach(rep => {
+            const row = tbody.insertRow();
+            const reportTime = rep.created_at ? new Date(rep.created_at).toLocaleTimeString('ar-SA') : 'قيد المعالجة';
+
+            // --- تحديد اللون بناءً على الحالة الحقيقية من قاعدة البيانات ---
+            let statusStyle = "";
+            let statusText = rep.status || "نشط"; // إذا كانت القيمة فارغة نعتبرها نشطة
+
+            if (statusText === "Active" || statusText === "نشط") {
+                statusStyle = "color: green;";
+                statusText = "نشط";
+            } else {
+                statusStyle = "color: gray; text-decoration: line-through;";
+                statusText = "مكتمل";
+            }
+
+            row.innerHTML = `
+                <td>${rep.readiness_level}</td>
+                <td>${rep.location_name}</td>
+                <td>${rep.description || '-'}</td>
+                <td>${reportTime}</td>
+                <td><span style="${statusStyle} font-weight: 900;">${statusText}</span></td>
+            `;
+        });
+
+        // عد البلاغات النشطة فقط في العداد العلوي
+        const activeCount = data.filter(r => r.status === "Active" || r.status === "نشط").length;
+        document.getElementById('activeReportsLabel').innerText = activeCount;
+
+    } catch (err) { console.log("Fetch Error", err); }
+}
+
+async function updateBedStats() {
+    let occ = parseInt(document.getElementById('bedInput').value) || 0;
+    try {
+        const { data: res } = await _supabase.from('health_resources').select('id').limit(1).single();
+        await _supabase.from('health_resources').update({ occupied_beds: occ }).eq('id', res.id);
+        await loadInitialData();
+        alert("تم التحديث ومزامنة البيانات");
+    } catch (err) { alert("خطأ في التحديث"); }
+}
+
+async function loadInitialData() {
+    fetchWeatherForStaff();
+    try {
+        const { data: res } = await _supabase.from('health_resources').select('*').limit(1).single();
+        if (res) {
+            document.getElementById('bedInput').value = res.occupied_beds;
+            document.getElementById('availBeds').innerText = res.total_beds - res.occupied_beds;
+            document.getElementById('occupancyPerc').innerText = Math.round((res.occupied_beds / res.total_beds) * 100) + "%";
+        }
+    } catch (e) {}
+    fetchGlobalPrediction();
+    fetchReportsFromDB();
+}
+window.onload = loadInitialData;
+</script>
+</body>
+</html>

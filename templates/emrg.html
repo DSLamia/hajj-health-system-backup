@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الاستجابة الإسعافي - مكة المكرمة</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Cairo:wght@400;700;900&display=swap');
+
+        :root {
+            --text-main: #000000; 
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --border-black: 2px solid #000000;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+
+        body {
+            min-height: 100vh;
+            background-image: url('makk.PNG');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .container { max-width: 1150px; margin: 0 auto; }
+
+        .card-box {
+            background: var(--card-bg);
+            border: var(--border-black);
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section-header {
+            background: #8b0000;
+            color: #fff;
+            padding: 8px 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: 900;
+            font-size: 18px;
+        }
+
+        table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
+        th { background: #000; color: #fff; padding: 12px; border: 1px solid #000; font-weight: 900; font-size: 14px; }
+        td { padding: 12px; border: 1px solid #000; text-align: center; font-weight: 900; color: #000; font-size: 14px; }
+
+        .action-btn { background: #000; color: #fff; border: none; padding: 8px 15px; font-weight: 900; cursor: pointer; font-size: 13px; }
+        .action-btn:hover { background: #8b0000; }
+
+        .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .status-item { background: #fff; border: 2px solid #000; padding: 15px; text-align: center; }
+        .label { font-weight: 900; font-size: 15px; display: block; margin-bottom: 5px; }
+        .val { font-weight: 900; font-size: 20px; color: #8b0000; }
+
+        .risk-high { background: #ffcccc; color: #8b0000; padding: 5px; border-radius: 5px; }
+        .btn-full { width: 100%; background: #000; color: #fff; padding: 15px; font-weight: 900; font-size: 18px; border: none; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 style="text-align: center; font-family: 'Unbounded'; margin-bottom: 30px; font-weight: 900; text-shadow: 2px 2px #fff;">نظام توجيه الفرق الإسعافية</h1>
+
+<div class="status-grid">
+    <div class="status-item">
+        <span class="label">حالة التوفر</span>
+        <span id="unitStatus" class="val" style="color: green;">متاح للإرسال (Ready)</span>
+    </div>
+    <div class="status-item">
+        <span class="label">المنشآت الصحية المتاحة</span>
+        <span id="facilitiesCount" class="val" style="font-size: 16px;">جاري الجلب...</span>
+    </div>
+    <div class="status-item">
+        <span class="label">إجمالي الأسرة الشاغرة</span>
+        <span id="vacantBedsCount" class="val">-- سرير</span>
+    </div>
+</div>
+
+    <div class="card-box">
+        <div class="section-header">البلاغات النشطة وتنبؤات الحالة</div>
+        <table id="emergencyTable">
+            <thead>
+                <tr>
+                    <th>كود البلاغ</th>
+                    <th>الموقع (Location)</th>
+                    <th>نوع الحالة</th>
+                    <th>تنبؤ المودل (Risk)</th>
+                    <th>المستشفى المقترح</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6">جاري جلب البلاغات النشطة...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card-box">
+    <div class="section-header" style="background: #000;">جاهزية الوحدة والمواد الطبية</div>
+    <table id="suppliesTable">
+        <thead>
+            <tr>
+                <th>المادة</th>
+                <th>الكمية</th>
+                <th>تاريخ الصلاحية</th>
+                <th>الحالة</th>
+                <th>الإجراء الميداني</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>أسطوانة أكسجين (كبير)</td>
+                <td>02</td>
+                <td>2026/12</td>
+                <td class="supply-status" style="color: #8b0000; font-weight: 900;">لم يتم الفحص</td>
+                <td><button class="action-btn check-btn" onclick="toggleSupply(this)">فحص</button></td>
+            </tr>
+            <tr>
+                <td>جهاز الصدمات الكهربائية</td>
+                <td>01</td>
+                <td>فحص دوري: تم</td>
+                <td class="supply-status" style="color: #8b0000; font-weight: 900;">لم يتم الفحص</td>
+                <td><button class="action-btn check-btn" onclick="toggleSupply(this)">فحص</button></td>
+            </tr>
+            <tr>
+                <td>أدوية الطوارئ الأساسية</td>
+                <td>حقيبة كاملة</td>
+                <td>2027/05</td>
+                <td class="supply-status" style="color: #8b0000; font-weight: 900;">لم يتم الفحص</td>
+                <td><button class="action-btn check-btn" onclick="toggleSupply(this)">فحص</button></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="display: flex; justify-content: center; margin-top: 20px;">
+        <button class="btn-full" style="max-width: 300px; background: #000;" onclick="location.href='employee_dashboard.html'">العودة للرئيسية</button>
+    </div>
+</div>
+
+<script>
+// إعداد الاتصال بسوبابيس
+const _supabase = supabase.createClient(
+    'https://rmpmbnmmgxsbxcvcbkwb.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc'
+);
+
+// قاموس اقتراحات المستشفيات بناءً على الموقع
+const hospitalSuggestions = {
+    "مشعر منى": ["مستشفى منى الطوارئ", "مستشفى منى الجسر", "مستشفى منى الوادي"],
+    "مزدلفة": ["مستشفى منى الجسر", "مستشفى نمرة", "مستشفى عرفات العام"],
+    "عرفات": ["مستشفى عرفات العام", "مستشفى نمرة", "مستشفى جبل الرحمة"],
+    "جسر الجمرات": ["مستشفى منى الطوارئ", "مستشفى منى الجسر", "مستشفى منى الوادي"],
+    "ساحات الحرم": ["مستشفى أجياد للطوارئ", "مستشفى الحرم", "مدينة الملك عبدالله الطبية"]
+};
+
+// 1. جلب البيانات من جدول emergency_team
+async function loadEmergencyTasks() {
+    try {
+        const { data: tasks, error } = await _supabase
+            .from('emergency_team')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const tbody = document.querySelector('#emergencyTable tbody');
+        tbody.innerHTML = '';
+
+        tasks.forEach(task => {
+            const row = tbody.insertRow();
+
+            // تحديد لون التنبؤ بناءً على الحقل readiness_level
+            let riskHTML = '';
+            if (task.readiness_level === 'High') {
+                riskHTML = '<span class="risk-high">خطر (High)</span>';
+            } else if (task.readiness_level === 'Medium') {
+                riskHTML = '<span style="color: orange;">متوسط (Medium)</span>';
+            } else {
+                riskHTML = '<span style="color: green;">مستقر (Low)</span>';
+            }
+
+            // منطق المستشفيات المقترحة بناءً على الموقع
+            const location = task.location_name || "";
+            const suggestions = hospitalSuggestions[location] || ["مستشفى مكة العام"];
+            let hospitalHTML = `<ul style="list-style: none; padding: 0; text-align: right; font-size: 12px;">`;
+            suggestions.forEach(h => {
+                hospitalHTML += `<li style="margin-bottom: 2px;">🏥 ${h}</li>`;
+            });
+            hospitalHTML += `</ul>`;
+
+            // منطق الأزرار بناءً على حالة العمود status
+            let btnText = "قبول المهمة";
+            let btnStyle = "";
+            if(task.status === 'Responding') {
+                btnText = "في الطريق..";
+                btnStyle = "background: #d4a34d;";
+            } else if(task.status === 'Arrived') {
+                btnText = "تم الوصول ✓";
+                btnStyle = "background: #28a745;";
+            }
+
+            row.innerHTML = `
+                <td>#${task.emergency_id.slice(0,5)}</td>
+                <td>${location || 'غير محدد'}</td>
+                <td>${task.description || 'بلاغ عام'}</td>
+                <td>${riskHTML}</td>
+                <td>${hospitalHTML}</td>
+                <td>
+                    <button class="action-btn" style="${btnStyle}"
+                        onclick="updateTaskStatus(this, '${task.emergency_id}')">
+                        ${btnText}
+                    </button>
+                </td>
+            `;
+        });
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
+
+// 2. تحديث الحالة في قاعدة البيانات باستخدام emergency_id
+async function updateTaskStatus(btn, eId) {
+    let nextStatus = '';
+    let nextText = '';
+    let nextColor = '';
+
+    if (btn.innerText === "قبول المهمة") {
+        nextStatus = 'Responding';
+        nextText = "في الطريق..";
+        nextColor = "#d4a34d";
+    } else if (btn.innerText === "في الطريق..") {
+        nextStatus = 'Arrived';
+        nextText = "تم الوصول ✓";
+        nextColor = "#28a745";
+    } else { return; }
+
+    try {
+        const { error } = await _supabase
+            .from('emergency_team')
+            .update({ status: nextStatus })
+            .eq('emergency_id', eId);
+
+        if (error) throw error;
+
+        btn.innerText = nextText;
+        btn.style.background = nextColor;
+
+        if(nextStatus === 'Responding') {
+            const statusDisplay = document.getElementById('unitStatus');
+            if(statusDisplay) {
+                statusDisplay.innerText = "مشغول (On Call)";
+                statusDisplay.style.color = "#8b0000";
+            }
+        }
+    } catch (err) {
+        alert("خطأ في الاتصال بقاعدة البيانات");
+    }
+}
+
+window.onload = loadEmergencyTasks;
+setInterval(loadEmergencyTasks, 5000);
+
+async function loadHealthResources() {
+    try {
+        const { data, error } = await _supabase
+            .from('health_resources')
+            .select('*')
+            .limit(1)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            // 1. حساب وعرض المنشآت (المستشفيات + المراكز الصحية)
+            const hCount = data.hospitals_count; // 36
+            const cCount = data.health_centers_count; // 192
+            document.getElementById('facilitiesCount').innerHTML =
+                `<span style="color:#8b0000">${hCount}</span> مستشفى | <span style="color:#8b0000">${cCount}</span> مركز`;
+
+            // 2. حساب الأسرة الشاغرة (الإجمالي - المشغول)
+            const vacant = data.total_beds - data.occupied_beds;
+            document.getElementById('vacantBedsCount').innerText = `${vacant.toLocaleString()} سرير`;
+        }
+    } catch (err) {
+        console.error("Error loading resources:", err);
+        document.getElementById('facilitiesCount').innerText = "36 مستشفى | 192 مركز"; // قيم افتراضية في حال الخطأ
+    }
+}
+
+const originalOnload = window.onload;
+window.onload = function() {
+    if (originalOnload) originalOnload();
+    loadHealthResources();
+    loadEmergencyTasks();
+};
+
+ // متغيرات التحكم في الحالة
+let checkedItemsCount = 0;
+const totalRequiredItems = 3;
+
+/**
+ * دالة التحكم في عملية الفحص اليدوي
+ */
+function toggleSupply(btn) {
+    const row = btn.parentElement.parentElement;
+    const statusCell = row.querySelector('.supply-status');
+
+    if (btn.innerText === "فحص") {
+        // تغيير الحالة إلى "جاري الفحص" والانتظار
+        statusCell.innerText = "جاري الفحص...";
+        statusCell.style.color = "orange";
+
+        btn.innerText = "تأكيد الفحص";
+        btn.style.background = "#d4a34d";
+
+    } else if (btn.innerText === "تأكيد الفحص") {
+        // تثبيت الحالة بعد تأكيد المستخدم يدوياً
+        statusCell.innerText = "تم الفحص ✓";
+        statusCell.style.color = "green";
+
+        btn.innerText = "معتمد";
+        btn.disabled = true;
+        btn.style.background = "#28a745";
+
+        checkedItemsCount++;
+        updateOverallUnitStatus();
+    }
+}
+
+/**
+ * دالة تحديث حالة التوفر العلوية بناءً على اكتمال الفحص
+ */
+function updateOverallUnitStatus() {
+    const statusDisplay = document.getElementById('unitStatus');
+
+    if (checkedItemsCount === totalRequiredItems) {
+        statusDisplay.innerText = "متاح للإرسال (Ready)";
+        statusDisplay.style.color = "green";
+        statusDisplay.style.fontWeight = "900";
+
+        alert("✅ اكتملت جاهزية جميع المعدات. الوحدة الآن في وضع الاستعداد لاستقبال البلاغات.");
+    } else {
+        // تذكير بأن الفحص لم يكتمل
+        statusDisplay.innerText = `غير جاهز (تم فحص ${checkedItemsCount}/${totalRequiredItems})`;
+        statusDisplay.style.color = "#8b0000";
+    }
+}
+
+// عند تشغيل الصفحة لأول مرة، نؤكد أن الحالة "غير جاهز"
+window.addEventListener('DOMContentLoaded', () => {
+    const statusDisplay = document.getElementById('unitStatus');
+    if(statusDisplay) {
+        statusDisplay.innerText = "غير جاهز (انتظار الفحص)";
+        statusDisplay.style.color = "#8b0000";
+    }
+});
+
+</script>
+</body>
+</html>

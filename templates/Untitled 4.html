@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>رحلة الإيمان</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Tajawal', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* الصفحة الأولى - الكعبة */
+#firstScreen {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url("makk.PNG");
+    background-size: cover;
+    background-position: center;
+    z-index: 2000;
+}
+
+.big-kaaba {
+    font-size: 8rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.big-kaaba:hover {
+    transform: scale(1.1);
+}
+
+/* الصفحة الثانية - الفيديو والترحيب */
+#secondScreen {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    color: white;
+}
+
+#bgVideo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+    z-index: -1;
+}
+
+.verse {
+    font-family: 'Amiri', serif;
+    font-size: 4rem;
+    font-weight: 900;
+    margin-bottom: 20px;
+    text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+        0 0 20px rgba(0,0,0,0.7);
+    position: relative;
+    z-index: 1;
+}
+
+.welcome {
+    font-size: 2rem;
+    margin-bottom: 40px;
+    font-weight: 700;
+    text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+        0 0 20px rgba(0,0,0,0.7);
+    position: relative;
+    z-index: 1;
+}
+
+.enter-btn {
+    font-size: 6rem;
+    cursor: pointer;
+    transition: 0.3s;
+    text-shadow: 
+        -2px -2px 0 #000,  
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000,
+        0 0 30px rgba(0,0,0,0.8);
+    position: relative;
+    z-index: 1;
+}
+
+.enter-btn:hover {
+    transform: scale(1.1);
+}
+
+/* صفحة البطاقات - خلفية الصورة */
+#cardsScreen {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-image: url("makk.PNG");
+    background-size: cover;
+    background-position: center;
+    z-index: 1000;
+}
+
+/* البطاقات */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    width: 80%;
+    max-width: 900px;
+}
+
+.card {
+  background-image: url("IMG_9826.jpg");
+background-size: cover;
+background-position: center;
+padding: 70px 30px;
+border-radius: 20px;
+cursor: pointer;
+transition: 0.3s;
+font-weight: 800;
+font-size: 1.5rem;
+text-align: center;
+color: white;
+position: relative;
+display: flex;
+align-items: center;
+justify-content: center;
+min-height: 180px;
+box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+transform: translateY(-20px);
+}
+
+.card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 20px;
+}
+
+.card span {
+    position: relative;
+    z-index: 2;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* إخفاء في البداية */
+#cardsScreen {
+    display: none;
+}
+
+</style>
+</head>
+<body>
+
+<!-- الصفحة الأولى -->
+<div id="firstScreen">
+    <div class="big-kaaba" onclick="goToSecond()">🕋</div>
+</div>
+
+<!-- الصفحة الثانية (فيها فيديو) -->
+<div id="secondScreen">
+    <video id="bgVideo" loop muted>
+        <source src="3905451405-preview.mp4" type="video/mp4">
+    </video>
+    <div class="verse">( وَأَذِّن فِي النَّاسِ بِالْحَجِّ )</div>
+    <div class="welcome">أهــلاً وسهــلاً ضــيف الرحـــمن</div>
+    <div class="enter-btn" onclick="showCards()">🕋</div>
+</div>
+
+<!-- صفحة البطاقات (خلفيتها makk.jpg) -->
+<div id="cardsScreen">
+    <div class="grid">
+        <div class="card" onclick="goToPage('pilgrim_dashboard.html')">
+            <span>الحجـاج</span>
+        </div>
+        <div class="card" onclick="goToPage('employee_dashboard.html')">
+            <span>الموظـفين</span>
+        </div>
+        <div class="card" onclick="goToPage('pub.html')">
+            <span>الافـراد</span>
+        </div>
+        <div class="card" onclick="goToPage('emrg.html')">
+            <span>الطـوارئ والإسعـاف</span>
+        </div>
+    </div>
+</div>
+
+<!-- تشغيل ملف talbiyah.mov كصوت -->
+<audio id="audio">
+    <source src="talbiyah.mov" type="audio/mp4">
+    <source src="talbiyah.mov" type="audio/quicktime">
+</audio>
+
+<script>
+    const _supabase = supabase.createClient(
+        'https://rmpmbnmmgxsbxcvcbkwb.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc'
+    );
+function goToSecond() {
+    // إخفاء الصفحة الأولى
+    document.getElementById("firstScreen").style.display = "none";
+    // إظهار الصفحة الثانية (الفيديو)
+    document.getElementById("secondScreen").style.display = "flex";
+    // تشغيل الفيديو
+    document.getElementById("bgVideo").play();
+    
+    // تشغيل ملف talbiyah.mov
+    var audio = document.getElementById("audio");
+    audio.play().catch(function(error) {
+        console.log("تشغيل الصوت تلقائياً لم ينجح: " + error);
+    });
+}
+
+function showCards() {
+    // إخفاء الصفحة الثانية
+    document.getElementById("secondScreen").style.display = "none";
+    // إيقاف الصوت
+    document.getElementById("audio").pause();
+    // إظهار صفحة البطاقات
+    document.getElementById("cardsScreen").style.display = "flex";
+}
+
+function goToPage(url) {
+    window.location.href = url;
+}
+</script>
+
+</body>
+</html>
