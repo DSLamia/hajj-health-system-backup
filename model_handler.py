@@ -2,7 +2,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
-import tensorflow as tf
 import joblib
 import os
 import pandas as pd
@@ -11,6 +10,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def predict_logic(input_df, role, has_chronic, disease_detail, bed_capacity, occupied_beds):
+    import tensorflow as tf
     # تحميل الموديل والسكيلر داخل الدالة فقط عند استدعائها!
     MODEL_PATH = os.path.join(BASE_DIR, 'ai_models', 'hajj_health_model.h5')
     SCALER_PATH = os.path.join(BASE_DIR, 'ai_models', 'scaler.pkl')
