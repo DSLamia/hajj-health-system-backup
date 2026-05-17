@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>رحلة الإيمان</title>
+<title>رحلة الإيمان - البوابة الرئيسية</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
+<style>
 * {
     margin: 0;
     padding: 0;
@@ -18,6 +18,7 @@ body {
     font-family: 'Tajawal', sans-serif;
     height: 100vh;
     overflow: hidden;
+    background-color: #000;
 }
 
 /* الصفحة الأولى - الكعبة */
@@ -28,7 +29,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url("makk.PNG");
+    background-image: url("/static/makk.PNG"); /* تعديل المسار للمجلد الاستاتيكي */
     background-size: cover;
     background-position: center;
     z-index: 2000;
@@ -38,6 +39,7 @@ body {
     font-size: 8rem;
     cursor: pointer;
     transition: 0.3s;
+    user-select: none;
 }
 
 .big-kaaba:hover {
@@ -73,8 +75,8 @@ body {
     font-size: 4rem;
     font-weight: 900;
     margin-bottom: 20px;
-    text-shadow: 
-        -1px -1px 0 #000,  
+    text-shadow:
+        -1px -1px 0 #000,
          1px -1px 0 #000,
         -1px  1px 0 #000,
          1px  1px 0 #000,
@@ -87,8 +89,8 @@ body {
     font-size: 2rem;
     margin-bottom: 40px;
     font-weight: 700;
-    text-shadow: 
-        -1px -1px 0 #000,  
+    text-shadow:
+        -1px -1px 0 #000,
          1px -1px 0 #000,
         -1px  1px 0 #000,
          1px  1px 0 #000,
@@ -101,14 +103,15 @@ body {
     font-size: 6rem;
     cursor: pointer;
     transition: 0.3s;
-    text-shadow: 
-        -2px -2px 0 #000,  
+    text-shadow:
+        -2px -2px 0 #000,
          2px -2px 0 #000,
         -2px  2px 0 #000,
          2px  2px 0 #000,
         0 0 30px rgba(0,0,0,0.8);
     position: relative;
     z-index: 1;
+    user-select: none;
 }
 
 .enter-btn:hover {
@@ -123,7 +126,7 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    background-image: url("makk.PNG");
+    background-image: url("/static/makk.PNG"); /* تعديل المسار */
     background-size: cover;
     background-position: center;
     z-index: 1000;
@@ -138,119 +141,118 @@ body {
     max-width: 900px;
 }
 
+@media(max-width: 768px) {
+    .grid { grid-template-columns: 1fr; gap: 15px; }
+}
+
 .card {
-  background-image: url("IMG_9826.jpg");
-background-size: cover;
-background-position: center;
-padding: 70px 30px;
-border-radius: 20px;
-cursor: pointer;
-transition: 0.3s;
-font-weight: 800;
-font-size: 1.5rem;
-text-align: center;
-color: white;
-position: relative;
-display: flex;
-align-items: center;
-justify-content: center;
-min-height: 180px;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-transform: translateY(-20px);
+    background-image: url("/static/IMG_9826.jpg"); /* تعديل المسار */
+    background-size: cover;
+    background-position: center;
+    padding: 70px 30px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: 800;
+    font-size: 1.6rem;
+    text-align: center;
+    color: white;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .card::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.55); /* زيادة التباين قليلاً وضوح النص فوق الصورة */
     border-radius: 20px;
+    transition: 0.3s;
+}
+
+.card:hover::before {
+    background: rgba(0, 0, 0, 0.35);
 }
 
 .card span {
     position: relative;
     z-index: 2;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
 }
 
 .card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
 }
-
-/* إخفاء في البداية */
-#cardsScreen {
-    display: none;
-}
-
 </style>
 </head>
 <body>
 
-<!-- الصفحة الأولى -->
 <div id="firstScreen">
     <div class="big-kaaba" onclick="goToSecond()">🕋</div>
 </div>
 
-<!-- الصفحة الثانية (فيها فيديو) -->
 <div id="secondScreen">
-    <video id="bgVideo" loop muted>
-        <source src="3905451405-preview.mp4" type="video/mp4">
+    <video id="bgVideo" loop muted playsinline>
+        <source src="/static/3905451405-preview.mp4" type="video/mp4">
     </video>
     <div class="verse">( وَأَذِّن فِي النَّاسِ بِالْحَجِّ )</div>
     <div class="welcome">أهــلاً وسهــلاً ضــيف الرحـــمن</div>
     <div class="enter-btn" onclick="showCards()">🕋</div>
 </div>
 
-<!-- صفحة البطاقات (خلفيتها makk.jpg) -->
 <div id="cardsScreen">
     <div class="grid">
-        <div class="card" onclick="goToPage('pilgrim_dashboard.html')">
+        <div class="card" onclick="goToPage('/pilgrim-dashboard')">
             <span>الحجـاج</span>
         </div>
-        <div class="card" onclick="goToPage('employee_dashboard.html')">
+        <div class="card" onclick="goToPage('/employee-dashboard')">
             <span>الموظـفين</span>
         </div>
-        <div class="card" onclick="goToPage('pub.html')">
+        <div class="card" onclick="goToPage('/public-weather')">
             <span>الافـراد</span>
         </div>
-        <div class="card" onclick="goToPage('emrg.html')">
+        <div class="card" onclick="goToPage('/emergency')">
             <span>الطـوارئ والإسعـاف</span>
         </div>
     </div>
 </div>
 
-<!-- تشغيل ملف talbiyah.mov كصوت -->
 <audio id="audio">
-    <source src="talbiyah.mov" type="audio/mp4">
-    <source src="talbiyah.mov" type="audio/quicktime">
+    <source src="/static/talbiyah.mov" type="audio/mp4">
+    <source src="/static/talbiyah.mov" type="audio/quicktime">
 </audio>
 
 <script>
     const _supabase = supabase.createClient(
         'https://rmpmbnmmgxsbxcvcbkwb.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc'
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc',
+        { auth: { persistSession: false } }
     );
+
 function goToSecond() {
-    // إخفاء الصفحة الأولى
     document.getElementById("firstScreen").style.display = "none";
-    // إظهار الصفحة الثانية (الفيديو)
     document.getElementById("secondScreen").style.display = "flex";
-    // تشغيل الفيديو
-    document.getElementById("bgVideo").play();
-    
-    // تشغيل ملف talbiyah.mov
-    var audio = document.getElementById("audio");
-    audio.play().catch(function(error) {
-        console.log("تشغيل الصوت تلقائياً لم ينجح: " + error);
-    });
+
+    const video = document.getElementById("bgVideo");
+    if(video) video.play().catch(e => console.log("تعذر تشغيل الفيديو تلقائياً"));
+
+    const audio = document.getElementById("audio");
+    if(audio) {
+        audio.play().catch(function(error) {
+            console.log("تشغيل صوت التلبية تلقائياً واجه قيود المتصفح: " + error);
+        });
+    }
 }
 
 function showCards() {
-    // إخفاء الصفحة الثانية
     document.getElementById("secondScreen").style.display = "none";
-    // إيقاف الصوت
-    document.getElementById("audio").pause();
-    // إظهار صفحة البطاقات
+    const audio = document.getElementById("audio");
+    if(audio) audio.pause();
     document.getElementById("cardsScreen").style.display = "flex";
 }
 
