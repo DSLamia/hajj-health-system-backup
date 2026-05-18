@@ -9,7 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Cairo:wght@400;700;900&display=swap');
         :root { --text-main: #000000; --card-bg: rgba(255, 255, 255, 0.9); --border-black: 2px solid #000000; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { min-height: 100vh; background-image: url('makk.PNG'); background-size: cover; background-position: center; background-attachment: fixed; color: var(--text-main); padding: 20px; }
+        body { min-height: 100vh; background-image: url('/static/makk.PNG'); background-size: cover; background-position: center; background-attachment: fixed; color: var(--text-main); padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
         .page-section { display: none; }
         .active-section { display: block; animation: fadeIn 0.4s ease-in-out; }
@@ -43,7 +43,7 @@
         </div>
         <div class="card-box" style="border-right: 10px solid #8b0000;">
             <div class="section-header" style="background: #8b0000;">توجيهات الميدان النشطة</div>
-            <div id="emergencyDirections"><div class="list-item">جاري تحليل البيانات...</div></div>
+            <div id="emergencyDirections"><div class="list-item">جاري تحليل البيانات من خادم مكة الذكي...</div></div>
         </div>
         <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
             <button class="btn-black" onclick="togglePage('reportFormSection')">تقديم تقرير</button>
@@ -145,6 +145,7 @@ async function fetchWeatherForStaff() {
         document.getElementById('humidityValue').innerText = data.hourly.relative_humidity_2m[0] + "%";
     } catch (e) { console.error("Weather error"); }
 }
+
 async function fetchGlobalPrediction() {
     let occupied = parseInt(document.getElementById('bedInput').value) || 0;
     try {
@@ -152,7 +153,8 @@ async function fetchGlobalPrediction() {
         const total = res ? res.total_beds : 10240;
         const occRate = Math.round((occupied / total) * 100);
 
-        const response = await fetch('http://127.0.0.1:5000/api/predict', {
+        // تعديل المسار هنا ليصبح نسبياً متوافقاً مع سيرفر الاستضافة الفعلي أونلاين
+        const response = await fetch('/api/predict', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ user_id: 'OFFICER-01', target_audience: 'officer', bed_capacity: total, occupied_beds: occupied })
@@ -164,7 +166,6 @@ async function fetchGlobalPrediction() {
             const riskEl = document.getElementById('riskValue');
             riskEl.innerText = results.risk_level;
 
-            // تحديث لون كلمة المخاطر العلوية
             riskEl.style.color = (results.risk_level === 'Low') ? 'green' : (results.risk_level === 'Moderate' ? 'orange' : 'red');
 
             let rawRecommendation = results.recommendation;
@@ -176,7 +177,6 @@ async function fetchGlobalPrediction() {
                 cleanRec = results.risk_level === 'Low' ? "الوضع آمن، استمر في المراقبة الروتينية." : "يرجى اتخاذ إجراءات احترازية فوراً.";
             }
 
-            // --- التعديل هنا لحل مشكلة كلمة "حرجة" ---
             let statusText = "مستقرة";
             let statusEmoji = "🟢";
             let statusColor = "green";
@@ -185,7 +185,7 @@ async function fetchGlobalPrediction() {
                 statusText = "حرجة";
                 statusEmoji = "🚨";
                 statusColor = "red";
-            } else if (results.risk_level === 'Moderate') {
+            } else if (results.risk_level === 'Moderate' || results.risk_level === 'Medium') {
                 statusText = "متوسطة الخطورة";
                 statusEmoji = "⚠️";
                 statusColor = "orange";
@@ -200,7 +200,10 @@ async function fetchGlobalPrediction() {
                 </div>
             `;
         }
-    } catch (e) { console.log("Flask Offline"); }
+    } catch (e) {
+        console.error("Flask API Connection Error:", e);
+        document.getElementById('emergencyDirections').innerHTML = `<div class="list-item" style="color: red;">⚠️ فشل جلب التنبؤات والتحليلات من السيرفر.</div>`;
+    }
 }
 
 async function submitReport() {
@@ -228,9 +231,8 @@ async function fetchReportsFromDB() {
             const row = tbody.insertRow();
             const reportTime = rep.created_at ? new Date(rep.created_at).toLocaleTimeString('ar-SA') : 'قيد المعالجة';
 
-            // --- تحديد اللون بناءً على الحالة الحقيقية من قاعدة البيانات ---
             let statusStyle = "";
-            let statusText = rep.status || "نشط"; // إذا كانت القيمة فارغة نعتبرها نشطة
+            let statusText = rep.status || "نشط";
 
             if (statusText === "Active" || statusText === "نشط") {
                 statusStyle = "color: green;";
@@ -249,7 +251,6 @@ async function fetchReportsFromDB() {
             `;
         });
 
-        // عد البلاغات النشطة فقط في العداد العلوي
         const activeCount = data.filter(r => r.status === "Active" || r.status === "نشط").length;
         document.getElementById('activeReportsLabel').innerText = activeCount;
 
