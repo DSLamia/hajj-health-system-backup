@@ -3,8 +3,7 @@ import joblib
 import pandas as pd
 import numpy as np
 import matplotlib
-
-matplotlib.use('Agg')  # لمنع تداخل واجهات الرسم مع السيرفر
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -13,19 +12,19 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def predict_logic(input_df, target_audience, has_chronic=False, disease_detail="none", diet_status="follows",
                   bed_capacity=None, occupied_beds=0):
-    # 🌟 استدعاء مكتبة ONNX الخفيفة والمتوافقة مع بايثون 3.12
+    # استدعاء مكتبة ONNX
     import onnxruntime as ort
 
     # مسارات الملفات الديناميكية
     MODEL_PATH = os.path.join(BASE_DIR, 'ai_models', 'hajj_health_model.onnx')
     SCALER_PATH = os.path.join(BASE_DIR, 'ai_models', 'scaler.pkl')
 
-    # تأمين قراءة قيم الطقس بشكل سليم قبل أي عملية رياضية
+    #  قراءة قيم الطقس
     try:
         temp_raw = input_df.iloc[0, 2]
         hum = input_df.iloc[0, 3]
     except Exception:
-        temp_raw, hum = 35.0, 45.0  # قيم افتراضية طارئة فقط إذا كانت المصفوفة مشوهة
+        temp_raw, hum = 35.0, 45.0  #قيم افتراضية طارئة فقط
 
     temp = (temp_raw * 0.98) + (temp_raw * (hum / 100) * 0.02)
     temp = round(temp + 0.3, 2)
@@ -45,9 +44,9 @@ def predict_logic(input_df, target_audience, has_chronic=False, disease_detail="
         prediction = session.run(None, {input_name: scaled_input})[0]
         heatstroke_count = int(max(0, prediction[0][0]))
     except Exception as e:
-        print(f"ONNX/Scaler Warning: {e}. Computing statistical prediction instead.")
-        # حساب حقيقي ذكي بناءً على الكثافة والحرارة الحالية إذا فشل الـ Loader
-        heatstroke_count = int(15 if temp > 40 else (5 if temp > 30 else 1))
+        # إذا فشل المودل الحقيقي، نرفع الخطأ مباشرة ليعرفه السيرفر
+        print(f"🚨 ONNX/Scaler Critical Failure: {e}")
+        raise e
 
     try:
         age_group_enc = input_df.iloc[0, 0]
@@ -118,7 +117,7 @@ def predict_logic(input_df, target_audience, has_chronic=False, disease_detail="
                 "تأكد من وجود تهوية جيدة في مكان إقامتك لضمان راحتك."
             ]
 
-    # 4. منطق المسؤولين (Officer) - مصحح ومؤمن بالكامل لمنع خطأ 500
+    # 4. منطق المسؤولين (Officer)
     else:
         try:
             actual_ratio = float(occupied_beds) / float(bed_capacity) if bed_capacity > 0 else 0

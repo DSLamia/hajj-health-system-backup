@@ -165,7 +165,7 @@
                 const temp = curr.temperature;
                 document.getElementById('rec1').innerText = temp > 36 ? `🌡️ الحرارة المرتفعة تبلغ ${Math.round(temp)}° - تجنب التعرض المباشر للشمس.` : `🌤️ الحرارة المعتدلة تبلغ ${Math.round(temp)}° - الأجواء مناسبة للحركة خارجاً.`;
 
-                // 4. تصحيح استدعاء جدول التنبيهات من سوبابيس (استخدام from بدلاً من table)
+                // 4. استدعاء جدول التنبيهات من سوبابيس
                 const { data: notes, error } = await _supabase
                     .from('notification')
                     .select('*')

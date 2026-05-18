@@ -246,11 +246,10 @@ async function getWeather() {
     } catch(e) {}
 }
 
-// تعديل جلب التنبؤ ليكون ديناميكياً بدون دمج الـ Localhost الثابت
-// دالة جلب التنبؤ المحدثة والمؤمنة بالكامل لمنع التعليق
+// دالة جلب التنبؤ
 async function fetchPrediction(userId) {
     try {
-        // تأمين إظهار مؤشر الانتظار بشكل لائق
+        //  إظهار مؤشر الانتظار
         const labelEl = document.getElementById('riskLabel');
         if (labelEl) labelEl.innerText = "جاري تحليل البيانات والمؤشرات الطبية الحية...";
 
@@ -276,7 +275,7 @@ async function fetchPrediction(userId) {
                 labelEl.style.color = color;
             }
 
-            // 2. تحريك مؤشر الخطر بسلاسة هندسية
+            // 2. تحريك مؤشر الخطر
             const ptr = document.getElementById('riskPointer');
             if (ptr) {
                 if (risk === 'Low') {
@@ -288,10 +287,10 @@ async function fetchPrediction(userId) {
                 }
             }
 
-            // 3. استخراج التوصيات الوقائية الحقيقية من المودل بشكل مرن
+            // 3. استخراج التوصيات الوقائية الحقيقية من المودل
             let h = `<h3 style="color:#8B4513; margin-bottom:15px;"><i class="fas fa-lightbulb"></i> توصية وقائية مخصصة لك</h3>`;
 
-            // تأمين جلب التوصيات بكافة المسميات التي يرسلها الباك إند
+            //  جلب التوصيات التي يرسلها الباك إند
             const recList = d.results.recommendation || d.results.recommendations || d.results.rec || [];
 
             if(Array.isArray(recList) && recList.length > 0) {
@@ -328,7 +327,7 @@ function showMainApp(user) {
     fetchPrayerTimes();
     getWeather();
 
-    // 🌟 الإصلاح الجذري: تمرير رقم الهاتف الحقيقي المسجل مباشرة إلى المودل
+    //  تمرير رقم الهاتف المسجل مباشرة إلى المودل
     const phoneToUse = user.phone_number;
     fetchPrediction(phoneToUse);
 }

@@ -153,7 +153,7 @@ async function fetchGlobalPrediction() {
         const total = res ? res.total_beds : 10240;
         const occRate = Math.round((occupied / total) * 100);
 
-        // تعديل المسار هنا ليصبح نسبياً متوافقاً مع سيرفر الاستضافة الفعلي أونلاين
+        // المسار متوافق مع السيرفر
         const response = await fetch('/api/predict', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

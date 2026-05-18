@@ -242,7 +242,7 @@ async function updateTaskStatus(btn, eId) {
     } else { return; }
 
     try {
-        // حماية ودعم تحديث المفاتيح ديناميكياً
+        //  تحديث المفاتيح ديناميكياً
         const { error } = await _supabase
             .from('emergency_team')
             .update({ status: nextStatus })
@@ -289,7 +289,7 @@ async function loadHealthResources() {
     }
 }
 
-// دالة التشغيل الموحدة عند تحميل الصفحة
+// دالة التشغيل  عند تحميل الصفحة
 window.onload = function() {
     loadHealthResources();
     loadEmergencyTasks();

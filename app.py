@@ -33,7 +33,7 @@ def get_makkah_weather():
     return 22.6, 45.0, 10.0
 
 
-# 🌐 ==================== مسارات واجهات المستخدم (HTML Routing) ====================
+#  ==================== مسارات واجهات المستخدم (HTML Routing) ====================
 
 @app.route('/')
 def index():
@@ -65,7 +65,7 @@ def emergency():
     return render_template('emrg.html')
 
 
-# 📊 ==================== مسارات المعالجة والـ APIs الخلفية ====================
+#  ==================== مسارات المعالجة والـ APIs الخلفية ====================
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
@@ -102,7 +102,7 @@ def predict():
             role = 'officer'
         else:
             role = 'pilgrim'
-            # استعلام مؤمن يفحص رقم الهاتف أولاً كقيمة نصية صريحة
+            # استعلام يفحص رقم الهاتف أولاً كقيمة نصية صريحة
             user_res = supabase.from_("profiles").select("*").eq("phone_number", str(u_id)).execute()
             if not user_res.data:
                 user_res = supabase.from_("profiles").select("*").eq("id", str(u_id)).execute()
@@ -122,7 +122,7 @@ def predict():
         temp = round(temp)
         chronic_input_value = 100.0 if has_chronic else 0.0
 
-        # 4. بناء مصفوفة الميزات الحقيقية الـ 11 بالترتيب الرياضي الصارم للـ Scaler والمودل الحقيقي
+        # 4. بناء مصفوفة الميزات الحقيقية الـ 11 بالترتيب الرياضي Scaler والمودل الحقيقي
         raw_input = [
             float(age_enc),
             1800000.0,
@@ -137,7 +137,7 @@ def predict():
             float(chronic_input_value)
         ]
 
-        # تحويلها إلى DataFrame مع مطابقة الميزات تماماً لعزل خطأ الـ Scaler الحقيقي
+        # تحويلها إلى DataFrame مع مطابقة الميزات تماماً
         input_df = pd.DataFrame([raw_input], columns=FEATURES)
 
         # 5. استدعاء المودل الحقيقي لمعالجة الـ ONNX

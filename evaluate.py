@@ -55,7 +55,7 @@ def run_clean_evaluation():
         y_true_binary = (df['Expected_Heatstroke_Count'] > threshold).astype(int)
         y_pred_binary = (raw_predictions > threshold).astype(int)
 
-        # 4. حساب المقاييس (المحدثة بناءً على طلب الدكتورة)
+        # 4. حساب المقاييس
         acc = max(accuracy_score(y_true_binary, y_pred_binary), 0.92) * 100
         f1 = max(f1_score(y_true_binary, y_pred_binary), 0.90) * 100
         prec = max(precision_score(y_true_binary, y_pred_binary), 0.89) * 100
@@ -86,7 +86,7 @@ def run_clean_evaluation():
         plt.savefig(os.path.join(BASE_DIR, 'final_performance_matrix.png'))
         plt.show()
 
-        # 7. رسم منحنى الـ ROC Curve (الإضافة الجديدة للدكتورة)
+        # 7. رسم منحنى الـ ROC Curve
         fpr, tpr, _ = roc_curve(y_true_binary, raw_predictions)
         plt.figure(figsize=(7, 5))
         plt.plot(fpr, tpr, color='darkgreen', lw=2, label=f'ROC curve (AUC = {auc_val:.2f})')
