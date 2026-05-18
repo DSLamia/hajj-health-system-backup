@@ -95,7 +95,7 @@ def predict():
 
         bed_cap = resources.get('total_beds', 10240)
 
-        # 2. تحديد بيانات المدخلات بناءً على نوع المستخدم لتفادي انهيار السيرفر
+        # 2. تحديد بيانات المدخلات بناءً على نوع المستخدم
         if target == 'officer' or u_id == 'OFFICER-01':
             age_enc = 1
             has_chronic = False
@@ -103,23 +103,17 @@ def predict():
             disease_name = 'none'
         else:
             role = 'pilgrim'
-            try:
-                # محاولة مرنة وفحص الحساب عبر حقل id أو pilgrim_id
-                user_res = supabase.from_("profiles").select("*").eq("id", u_id).execute()
+            user_res = supabase.from_("profiles").select("*").eq("id", u_id).execute()
+            if not user_res.data:
+                user_res = supabase.from_("profiles").select("*").eq("pilgrim_id", u_id).execute()
 
-                if not user_res.data:
-                    user_res = supabase.from_("profiles").select("*").eq("pilgrim_id", u_id).execute()
-
-                if user_res.data:
-                    user_data = user_res.data[0]
-                    age_map = {"1-15": 0, "16-60": 1, "61+": 2}
-                    age_enc = age_map.get(user_data.get('age_group'), 1)
-                    has_chronic = user_data.get('has_chronic', False)
-                    disease_name = user_data.get('disease_detail', 'none')
-                else:
-                    age_enc, has_chronic = 1, False
-            except Exception as profile_err:
-                print(f"Log: Profile sub-fetch bypassed, using defaults: {profile_err}")
+            if user_res.data:
+                user_data = user_res.data[0]
+                age_map = {"1-15": 0, "16-60": 1, "61+": 2}
+                age_enc = age_map.get(user_data.get('age_group'), 1)
+                has_chronic = user_data.get('has_chronic', False)
+                disease_name = user_data.get('disease_detail', 'none')
+            else:
                 age_enc, has_chronic = 1, False
 
         # 3. جلب بيانات الطقس الحالية لتمريرها للمودل
@@ -144,26 +138,31 @@ def predict():
 
         input_df = pd.DataFrame([raw_input], columns=FEATURES)
 
-        # 5. استدعاء معالج المودل وحساب النتائج ومستوى الخطورة
-        results = predict_logic(
-            input_df,
-            role,
-            has_chronic,
-            disease_detail=disease_name,
-            bed_capacity=bed_cap,
-            occupied_beds=occ_beds
-        )
-
-        # 6. حفظ التنبؤ الحالي في قاعدة البيانات للرجوع التاريخي
+        # 5. استدعاء معالج المودل (هنا الحقيقة كاملة)
+        # إذا انهار المودل، سنقبض على رسالة الخطأ الرياضية ونرسلها مباشرة للمتصفح لمعرفتها
         try:
-            supabase.from_("predictions").insert({
-                "user_id": str(u_id),
-                "heatstroke_predicted": int(results.get('heatstroke', 0)),
-                "risk_level": results.get('risk_level', 'Low'),
-                "occupied_beds": int(occ_beds)
-            }).execute()
-        except Exception as save_error:
-            print(f"Log: Prediction snapshot could not be stored in DB: {save_error}")
+            results = predict_logic(
+                input_df,
+                role,
+                has_chronic,
+                disease_detail=disease_name,
+                bed_capacity=bed_cap,
+                occupied_beds=occ_beds
+            )
+        except Exception as model_error:
+            print(f"!!! MODEL LOGIC CRASHED !!! Reason: {model_error}")
+            return jsonify({
+                "status": "error",
+                "message": f"انهار المودل الذكي داخلياً بسبب: {str(model_error)}"
+            }), 200  # نرجع كود 200 عشان المتصفح ما يعلق ويطبع لك النص الصريح للخطأ
+
+        # 6. أتمتة حفظ التنبؤ الحالي في قاعدة البيانات
+        supabase.from_("predictions").insert({
+            "user_id": str(u_id),
+            "heatstroke_predicted": int(results.get('heatstroke', 0)),
+            "risk_level": results.get('risk_level', 'Low'),
+            "occupied_beds": int(occ_beds)
+        }).execute()
 
         return jsonify({
             "status": "success",
@@ -173,7 +172,7 @@ def predict():
 
     except Exception as e:
         print(f"Critical Error in Predict Endpoint: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": f"خطأ عام بالسيرفر: {str(e)}"}), 200
 @app.route('/api/send-report', methods=['POST'])
 def send_report():
     try:
