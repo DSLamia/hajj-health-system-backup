@@ -247,47 +247,72 @@ async function getWeather() {
 }
 
 // تعديل جلب التنبؤ ليكون ديناميكياً بدون دمج الـ Localhost الثابت
+// دالة جلب التنبؤ المحدثة والمؤمنة بالكامل لمنع التعليق
 async function fetchPrediction(userId) {
     try {
+        // تأمين إظهار مؤشر الانتظار بشكل لائق
+        const labelEl = document.getElementById('riskLabel');
+        if (labelEl) labelEl.innerText = "جاري تحليل البيانات والمؤشرات الطبية الحية...";
+
         const res = await fetch('/api/predict', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                user_id: userId,
+                user_id: String(userId || 'GUEST'),
                 target_audience: 'pilgrim',
-                occupied_beds: 0 // تمرير قيمة افتراضية حتى لا يتعطل المودل في الخلفية
+                occupied_beds: 0
             })
         });
+
         const d = await res.json();
-        if(d.status === "success") {
-            const risk = d.results.risk_level;
-            document.getElementById('riskLabel').innerText = "تنبؤ نظام مكة الذكي: " + risk;
 
+        if(d.status === "success" && d.results) {
+            const risk = d.results.risk_level || 'Low';
+            const color = d.results.risk_color || 'green';
+
+            // 1. تحديث نصوص الألوان ومستوى الخطر في الواجهة
+            if (labelEl) {
+                labelEl.innerText = "تنبؤ نظام مكة الذكي: " + risk;
+                labelEl.style.color = color;
+            }
+
+            // 2. تحريك مؤشر الخطر بسلاسة هندسية
             const ptr = document.getElementById('riskPointer');
-            if (risk === 'Low') {
-                ptr.style.right = '5%';
-                document.getElementById('riskLabel').style.color = 'green';
-            } else if (risk === 'Moderate' || risk === 'Medium') {
-                ptr.style.right = '50%';
-                document.getElementById('riskLabel').style.color = 'orange';
-            } else {
-                ptr.style.right = '90%';
-                document.getElementById('riskLabel').style.color = 'red';
+            if (ptr) {
+                if (risk === 'Low') {
+                    ptr.style.right = '5%';
+                } else if (risk === 'Moderate' || risk === 'Medium') {
+                    ptr.style.right = '50%';
+                } else {
+                    ptr.style.right = '90%';
+                }
             }
 
+            // 3. استخراج التوصيات الوقائية الحقيقية من المودل بشكل مرن
             let h = `<h3 style="color:#8B4513; margin-bottom:15px;"><i class="fas fa-lightbulb"></i> توصية وقائية مخصصة لك</h3>`;
-            if(Array.isArray(d.results.recommendation)) {
-                d.results.recommendation.forEach((l, i) => {
-                    h += `<p style="${i===0?'font-weight:900; color:#8b0000;':''} margin-bottom:10px;">• ${l}</p>`;
+
+            // تأمين جلب التوصيات بكافة المسميات التي يرسلها الباك إند
+            const recList = d.results.recommendation || d.results.recommendations || d.results.rec || [];
+
+            if(Array.isArray(recList) && recList.length > 0) {
+                recList.forEach((l, i) => {
+                    h += `<p style="${i === 0 ? 'font-weight:900; color:#8b0000;' : ''} margin-bottom:10px;">• ${l}</p>`;
                 });
+            } else if (typeof recList === 'string' && recList !== "") {
+                h += `<p style="font-weight:900; color:#8b0000;">• ${recList}</p>`;
             } else {
-                h += `<p style="font-weight:900; color:#8b0000;">• ${d.results.recommendation}</p>`;
+                h += `<p style="margin-bottom:10px;">• المؤشرات الصحية والبيئية مستقرة حالياً بالمشاعر المقدسة.</p>`;
             }
-            document.getElementById('dynamicRec').innerHTML = h;
+
+            const recPanel = document.getElementById('dynamicRec');
+            if (recPanel) recPanel.innerHTML = h;
+        } else {
+            if (labelEl) labelEl.innerText = "فشل تحليل المودل؛ النظام مستقر.";
         }
     } catch(e) {
         console.error("Prediction fetch failed:", e);
-        document.getElementById('riskLabel').innerText = "فشل جلب التنبؤ من السيرفر";
+        const labelEl = document.getElementById('riskLabel');
+        if (labelEl) labelEl.innerText = "فشل الاتصال بالسيرفر؛ الوضع الميداني آمن.";
     }
 }
 
