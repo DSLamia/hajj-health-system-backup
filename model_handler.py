@@ -36,17 +36,22 @@ def predict_logic(input_df, target_audience, has_chronic=False, disease_detail="
             bed_capacity = 10240
 
     # تشغيل التنبؤ عبر ONNX مع حماية السكالر من الحقول الناقصة
-    try:
-        scaler = joblib.load(SCALER_PATH)
-        session = ort.InferenceSession(MODEL_PATH)
-        scaled_input = scaler.transform(input_df).astype(np.float32)
-        input_name = session.get_inputs()[0].name
-        prediction = session.run(None, {input_name: scaled_input})[0]
-        heatstroke_count = int(max(0, prediction[0][0]))
-    except Exception as e:
-        # إذا فشل المودل الحقيقي، نرفع الخطأ مباشرة ليعرفه السيرفر
-        print(f"🚨 ONNX/Scaler Critical Failure: {e}")
-        raise e
+     try:
+            scaler = joblib.load(SCALER_PATH)
+            session = ort.InferenceSession(MODEL_PATH)
+
+            raw_values = input_df.values
+
+            scaled_input = scaler.transform(raw_values).astype(np.float32)
+
+            input_name = session.get_inputs()[0].name
+            prediction = session.run(None, {input_name: scaled_input})[0]
+
+            heatstroke_count = int(max(0, prediction[0][0]))
+
+     except Exception as e:
+            print(f"🚨 ONNX/Scaler Critical Failure: {e}")
+            raise e
 
     try:
         age_group_enc = input_df.iloc[0, 0]
