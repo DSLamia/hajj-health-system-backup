@@ -328,9 +328,9 @@ function showMainApp(user) {
     fetchPrayerTimes();
     getWeather();
 
-    // استخدام المفتاح الديناميكي الصواب
-    const idToUse = user.pilgrim_id || user.id;
-    fetchPrediction(idToUse);
+    // 🌟 الإصلاح الجذري: تمرير رقم الهاتف الحقيقي المسجل مباشرة إلى المودل
+    const phoneToUse = user.phone_number;
+    fetchPrediction(phoneToUse);
 }
 
 document.getElementById('entryBtn').addEventListener('click', async () => {

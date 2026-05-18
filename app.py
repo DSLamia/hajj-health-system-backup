@@ -79,6 +79,7 @@ def predict():
         disease_name = 'none'
         diet_status = 'follows'
         has_chronic = False
+        age_enc = 1
 
         # 1. جلب الموارد الصحية الحقيقية من قاعدة البيانات
         SPECIFIC_ID = "4e13e939-e91e-4eb0-abe4-2bd111445112"
@@ -92,17 +93,16 @@ def predict():
                 'health_centers_count': 192, 'staff_count': 50000, 'ambulances': 900
             }
 
-        # تصحيح تأمين جلب السعة الكلية
         bed_cap = resources.get('total_beds', 10240)
 
-        # 2. استخراج بيانات الحاج الحقيقية لمنع الحقول الفارغة
+        # 2. استخراج بيانات الحاج الحقيقية ومطابقتها برقم الهاتف أو الـ ID
         if str(target).lower() == 'officer' or u_id == 'OFFICER-01':
             age_enc = 1
             has_chronic = False
             role = 'officer'
         else:
             role = 'pilgrim'
-            # جلب البيانات الحقيقية عبر رقم الهاتف أولاً ثم الـ ID
+            # استعلام مؤمن يفحص رقم الهاتف أولاً كقيمة نصية صريحة
             user_res = supabase.from_("profiles").select("*").eq("phone_number", str(u_id)).execute()
             if not user_res.data:
                 user_res = supabase.from_("profiles").select("*").eq("id", str(u_id)).execute()
@@ -120,9 +120,9 @@ def predict():
         # 3. جلب بيانات الطقس الحقيقية
         temp, hum, wind = get_makkah_weather()
         temp = round(temp)
-        chronic_input_value = 100 if has_chronic else 0
+        chronic_input_value = 100.0 if has_chronic else 0.0
 
-        # 4. بناء مصفوفة الميزات الحقيقية المتوافقة رياضياً مع الـ Scaler والمودل
+        # 4. بناء مصفوفة الميزات الحقيقية الـ 11 بالترتيب الرياضي الصارم للـ Scaler والمودل الحقيقي
         raw_input = [
             float(age_enc),
             1800000.0,
@@ -131,16 +131,16 @@ def predict():
             float(wind),
             float(resources.get('hospitals_count', 36)),
             float(resources.get('health_centers_count', 192)),
-            float(bed_cap), # تم تصحيح المفتاح هنا ليتوافق مع المعرف بالأعلى
+            float(bed_cap),
             float(resources.get('staff_count', 50000)),
             float(resources.get('ambulances', 900)),
             float(chronic_input_value)
         ]
 
-        # تحويلها إلى DataFrame مع مطابقة الميزات تماماً
+        # تحويلها إلى DataFrame مع مطابقة الميزات تماماً لعزل خطأ الـ Scaler الحقيقي
         input_df = pd.DataFrame([raw_input], columns=FEATURES)
 
-        # 5. استدعاء معالجة المودل الحقيقي الحسابي (بدون تعديل في الاستجابة)
+        # 5. استدعاء المودل الحقيقي لمعالجة الـ ONNX
         results = predict_logic(
             input_df,
             role,
@@ -151,7 +151,7 @@ def predict():
             occupied_beds=occ_beds
         )
 
-        # 6. تصحيح سنتكس استعلام الحفظ في سوبابيس (منع انهيار السيرفر)
+        # 6. حفظ التنبؤ الحقيقي في سوبابيس بالسنتكس الصحيح
         try:
             supabase.from_("predictions").insert({
                 "user_id": str(u_id),
@@ -179,9 +179,8 @@ def predict():
         })
 
     except Exception as e:
-        # طباعة الخطأ الحقيقي في الـ Terminal لمعرفته بدقة إذا انهار شيء آخر
-        print(f"!!! CRITICAL ENDPOINT CRASH !!! Reason: {e}")
-        return jsonify({"status": "error", "message": f"حدث خطأ في معالجة البيانات الحقيقية: {str(e)}"}), 500
+        print(f"Critical Error in Predict Endpoint: {e}")
+        return jsonify({"status": "error", "message": f"انهار التحليل الحقيقي: {str(e)}"}), 500
 @app.route('/api/send-report', methods=['POST'])
 def send_report():
     try:
