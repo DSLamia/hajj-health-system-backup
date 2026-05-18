@@ -24,7 +24,6 @@ The system operates via a tightly decoupled client-server architecture designed 
 ▼
 [Dynamic Risk Level Output & Tailored Preventive Protocols]
 
-
 ---
 
 ## 🛠️ Key Architectural Updates (Production Deployment)
