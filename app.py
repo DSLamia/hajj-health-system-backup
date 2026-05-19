@@ -33,7 +33,7 @@ def login():
         input_pass = request.form.get('password')
 
         try:
-            # استعلام حقيقي من جدول المستخدمين في سوبابيس لضمان بروتوكولات الأمان والخصوصية
+            # استعلام حقيقي من جدول المستخدمين في سوبابيس
             user_query = supabase.table('users_auth').select('*').eq('username', input_user).execute()
 
             if user_query.data and len(user_query.data) > 0:
@@ -44,7 +44,7 @@ def login():
                     session['user'] = user_record.get('username')
                     session['role'] = user_record.get('role')
 
-                    # توجيه المستخدم حسب صلاحياته المسجلة في قاعدة البيانات
+                    # توجيه المستخدم حسب صلاحياته المسجلة
                     if session['role'] == 'officer':
                         return redirect(url_for('employee_dashboard'))
                     elif session['role'] == 'paramedic':
@@ -57,11 +57,16 @@ def login():
                 return render_template('login.html', error="🚨 اسم المستخدم غير مسجل في منظومة البيانات.")
 
         except Exception as db_err:
-            # رسالة مخصصة للمطور عند فشل جلب الاستعلام
-            return render_template('login.html',
-                                   error=f"🛠️ خطأ مطور: فشل الاتصال بخادم الاستيثاق بـ Supabase. تفاصيل: {str(db_err)}")
+            try:
+                return render_template('login.html', error=f"🛠️ خطأ في الاستيثاق: {str(db_err)}")
+            except Exception:
+                return f"<h1>🚨 خطأ نظام مكة الذكي</h1><p>تفاصيل فشل السيرفر في جلب البيانات: {str(db_err)}</p>"
 
-    return render_template('login.html', error=None)
+    # تأمين مسار الـ GET للتأكد من عدم انهيار السيرفر إذا كان ملف الـ HTML به صيغة خاطئة
+    try:
+        return render_template('login.html', error=None)
+    except Exception as template_err:
+        return f"<h1>⚙️ خطأ مطور في قوالب الـ HTML</h1><p>السيرفر لا يجد ملف 'login.html' بداخل مجلد templates، أو هناك صيغة Jinja2 تالفة داخله. تفاصيل الخطأ: {str(template_err)}</p>"
 
 
 @app.route('/logout')
