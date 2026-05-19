@@ -92,8 +92,7 @@ def predict():
             if phone_number:
                 user_query = user_query.eq('phone_number', str(phone_number))
             else:
-                user_query = user_query.eq('ID', str(user_id))
-
+                user_query = user_query.eq('pilgrim_id', str(user_id))
             user_res = user_query.execute()
 
             if user_res.data and len(user_res.data) > 0:
@@ -144,7 +143,7 @@ def predict():
         return jsonify({
             "status": "error",
             "message": error_msg
-        }), 400  
+        }), 400
 @app.route('/api/send-report', methods=['POST'])
 def send_report():
     try:
