@@ -72,33 +72,39 @@ def predict():
     try:
         data = request.get_json() or {}
 
-        # 1. قراءة البيانات الجوية القادمة من الواجهة
-        temp = float(data.get('temperature', 35.0))
-        humidity = float(data.get('humidity', 50.0))
+        # 1. قراءة البيانات الأساسية القادمة من الواجهة
+        temp = float(data.get('temperature', 32.2))
+        humidity = float(data.get('humidity', 9.0))
         wind_speed = float(data.get('wind_speed', 10.0))
         crowd_density = float(data.get('crowding_density', 1.0))
 
-        # 2. تحديد هوية المستخدم
+        # قراءة بيانات السعة للمسؤولين
+        bed_capacity = float(data.get('bed_capacity', 150.0))
+        occupied_beds = float(data.get('occupied_beds', 45.0))
+
+        # تحديد (pilgrim أو officer)
+        target_audience = data.get('target_audience', 'officer')
         phone_number = data.get('phone_number')
         user_id = data.get('user_id')
 
-        # فئات رقمية حقيقية للمودل
-        age_group = 1.0
+        # قيم افتراضية للمسؤول
+        age_group_enc = 1.0
         chronic_disease = 0.0
+        has_chronic = False
+        disease_detail = "none"
+        diet_status = "follows"
 
-        # إذا الطلب جاي من واجهة حاج ومعه بيانات، نسحب بياناته الحقيقية من Supabase
+        # فحص صيغة الـ UUID للمستخدم
         is_valid_uuid = False
         if user_id and len(str(user_id)) == 36 and '-' in str(user_id):
             is_valid_uuid = True
 
+        # جلب بيانات الحاج الحقيقية من Supabase
         if phone_number or is_valid_uuid:
             try:
                 user_query = supabase.table('profiles').select('*')
-
-                # إذا فيه جوال، نبحث بالجوال لأنه آمن
                 if phone_number:
                     user_query = user_query.eq('phone_number', str(phone_number))
-                # إذا ما فيه جوال بس الـ ID عبارة عن UUID حقيقي نبحث به
                 elif is_valid_uuid:
                     user_query = user_query.eq('pilgrim_id', str(user_id))
 
@@ -107,62 +113,140 @@ def predict():
                 if user_res.data and len(user_res.data) > 0:
                     profile = user_res.data[0]
                     raw_age = int(profile.get('age', 35))
-                    age_group = 0.0 if raw_age <= 15 else (2.0 if raw_age >= 61 else 1.0)
+                    age_group_enc = 0.0 if raw_age <= 15 else (2.0 if raw_age >= 61 else 1.0)
 
                     has_chronic = profile.get('chronic_diseases', False)
                     chronic_disease = 100.0 if has_chronic else 0.0
+                    disease_detail = str(profile.get('disease_type', 'none')).lower()
+                    diet_status = str(profile.get('diet_compliance', 'follows')).lower()
             except Exception as sb_e:
-                print(f"Supabase query skipped safely: {sb_e}")
+                print(f"Supabase context fetch skipped safely: {sb_e}")
 
-        # 3. بناء المصفوفة الـ 11 الحقيقية بالترتيب للمودل
+        # 2. بناء المصفوفة الـ 11  واستدعاء المودل
         features_dict = {
-            'Age_Group': [float(age_group)],
+            'Age_Group': [float(age_group_enc)],
             'Crowd_Density': [float(crowd_density)],
             'Temperature': [float(temp)],
             'Humidity': [float(humidity)],
             'Wind_Speed': [float(wind_speed)],
             'Hospitals_Count': [3.0],
             'Health_Centers_Count': [10.0],
-            'Total_Bed_Capacity': [150.0],
+            'Total_Bed_Capacity': [bed_capacity],
             'Staff_Count': [45.0],
             'Ambulance_Fleet_Size': [12.0],
             'Chronic_Disease_Input': [float(chronic_disease)]
         }
 
+        import pandas as pd
         input_df = pd.DataFrame(features_dict)
 
-        # 4. استدعاء مودل  ONNX
         from model_handler import predict_logic
-        result = predict_logic(input_df, temp)
-        # تصنيف مستوى الخطر بناءً على مخرجات المودل
-        if isinstance(result, dict):
-            # يبحث عن أي مفتاح يحتوي على النتيجة مثل 'prediction' أو 'heatstroke_count'
-            heatstroke_count = int(result.get('heatstroke_predictions', result.get('prediction', 0)))
-        else:
-            heatstroke_count = int(result)
+        result_model = predict_logic(input_df, temp)
 
-        # الحساب الصارم لمستوى الخطر بناءً على الرقم الحقيقي المستخرج من المودل
-        if heatstroke_count < 5:
-            risk_level = "مستقر"
-        elif heatstroke_count < 15:
-            risk_level = "متوسط"
+        if isinstance(result_model, dict):
+            heatstroke_count = int(result_model.get('heatstroke_predictions', result_model.get('prediction', 0)))
         else:
-            risk_level = "حرج"
+            heatstroke_count = int(result_model)
 
+        ratio = heatstroke_count / bed_capacity if bed_capacity > 0 else 0
+
+        # [منطق تصنيف مستوى الحرارة]
+        if temp >= 40:
+            heat_level, color = "High", "red"
+        elif 30 <= temp < 40:
+            heat_level, color = "Moderate", "orange"
+        else:
+            heat_level, color = "Low", "green"
+
+        # [منطق الحجاج - Pilgrim]
+        if str(target_audience).lower() == "pilgrim":
+            p_risk_points = 0
+            disease_weights = {
+                "heart": 4, "asthma": 3.5, "hypertension": 3, "neurological": 2.5,
+                "diabetes1": 2, "diabetes2": 2, "cancer": 1.5, "hepatitis": 1,
+                "rheumatism": 1, "none": 0
+            }
+
+            if has_chronic:
+                p_risk_points += disease_weights.get(disease_detail, 1)
+            if has_chronic and diet_status == "not_follows":
+                p_risk_points += 0.25
+            if age_group_enc >= 2:
+                p_risk_points += 2
+
+            if heat_level == "High" and p_risk_points >= 5:
+                risk = "High"
+                color = "red"
+                rec = [
+                    f" 🚨 درجة الحرارة ({int(temp)}°C) مرتفعة جداً وتشكل خطورة على سلامتك.",
+                    "يرجى البقاء في مكان بارد وتجنب التحرك أو بذل أي مجهود بدني حالياً.",
+                    "احرص على شرب السوائل بانتظام لتعويض ما يفقده الجسم.",
+                    "نرجو منك التوجه لأقرب نقطة طبية فوراً في حال الشعور بأي إعياء."
+                ]
+            elif heat_level == "Moderate" and p_risk_points >= 3:
+                risk = "Moderate"
+                color = "orange"
+                rec = [
+                    f"⚠️ الأجواء حالياً ({int(temp)}°C) تتطلب منك أخذ الحيطة والحذر.",
+                    "ننصحك باستخدام المظلة الشمسية عند الضرورة لتجنب الإجهاد الحراري.",
+                    "احرص على تناول السوائل والأملاح لتعويض المجهود البدني المبذول.",
+                    "يفضل تأجيل أي تحركات غير ضرورية حتى تنكسر حدة الشمس."
+                ]
+            else:
+                risk = "Low"
+                color = "green"
+                rec = [
+                    f"✅ المؤشرات البيئية ({int(temp)}°C) ضمن النطاق الآمن والمستقر.",
+                    "يمكنك إكمال مناسكك مع الاستمرار في شرب السوائل كإجراء احترازي.",
+                    "حاول أخذ فترات راحة قصيرة بين الحين والآخر للحفاظ على نشاطك.",
+                    "تأكد من وجود تهوية جيدة في مكان إقامتك لضمان راحتك."
+                ]
+
+        # [منطق المسؤولين - Officer]
+        else:
+            try:
+                actual_ratio = float(occupied_beds) / float(bed_capacity) if bed_capacity > 0 else 0
+            except Exception:
+                actual_ratio = 0
+
+            occ_perc = int(actual_ratio * 100)
+
+            if heat_level == "High" or actual_ratio >= 0.75 or ratio > 0.10:
+                risk = "High"
+                color = "red"
+                rec = [
+                    f"🚨 تحذير حرج: نسبة الإشغال الميداني ({occ_perc}%) تجاوزت حد الأمان الحرج.",
+                    "مستويات الخطورة البيئية مرتفعة جداً؛ يرجى تفعيل خطة الطوارئ فوراً.",
+                    "توجيه مصفوفة الدعم الطبي الإضافي لتقليل الضغط على المستشفيات الحالية."
+                ]
+            elif actual_ratio >= 0.50:
+                risk = "Moderate"
+                color = "orange"
+                rec = [
+                    f"⚠️ تنبيه متوسط: نسبة الإشغال الحالية ({occ_perc}%) في تصاعد مستمر.",
+                    "يرجى توجيه الحجاج للمسارات الأقل كثافة وإخطار المراكز الصحية الميدانية.",
+                    "رفع جاهزية الكوادر الطبية المتنقلة لاستقبال أي حالات إجهاد حراري محتملة."
+                ]
+            else:
+                risk = "Low"
+                color = "green"
+                rec = [
+                    f"🟢 حالة المنظومة الطبية والبيئية مستقرة تماماً وجاهزيتها متميزة.",
+                    f"نسبة إشغال الأسرة الحالية هي {occ_perc}% وهي ضمن النطاق الطبيعي.",
+                    "توزيع الكثافات البشرية يسير بشكل ممتاز بالتنسيق مع غرف العمليات."
+                ]
+
+        #  
         return jsonify({
             "status": "success",
             "heatstroke_predictions": heatstroke_count,
-            "risk_level": risk_level,
-            "recommendations": f"التنبؤ الحالي يسجل {heatstroke_count} حالة إجهاد حراري محتملة في الموقع."
+            "risk_level": risk,
+            "risk_color": color,
+            "recommendations": rec
         })
+
     except Exception as main_e:
-        # نطبع الخطأ في السيرفر ونرسله للواجهة
-        error_msg = f"Inference Error: {str(main_e)}"
-        print(f"🚨 {error_msg}")
-        return jsonify({
-            "status": "error",
-            "message": error_msg
-        }), 400
+        return jsonify({"status": "error", "message": f"Inference Error: {str(main_e)}"}), 400
 @app.route('/api/send-report', methods=['POST'])
 def send_report():
     try:
