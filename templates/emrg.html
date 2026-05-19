@@ -262,34 +262,44 @@ async function loadEmergencyTasks() {
 }
 
 async function updateTaskStatus(btn, eId) {
-    let nextStatus = ''; let nextText = ''; let nextColor = '';
+    let nextStatus = '';
+    let nextText = '';
+    let nextColor = '';
 
     if (btn.innerText === "قبول المهمة") {
-        nextStatus = 'Responding'; nextText = "في الطريق.."; nextColor = "#d4a34d";
+        nextStatus = 'Responding';
+        nextText = "في الطريق..";
+        nextColor = "#d4a34d";
     } else if (btn.innerText === "في الطريق..") {
-        nextStatus = 'Arrived'; nextText = "تم الوصول ✓"; nextColor = "#28a745";
-    } else { return; }
+        nextStatus = 'Arrived';
+        nextText = "تم الوصول ✓";
+        nextColor = "#28a745";
+    } else {
+        return;
+    }
 
     try {
         const response = await fetch('/api/update-task', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: eId, status: nextStatus })
+            body: JSON.stringify({ id: eId, status: nextStatus }) // يرسل الـ eId بشكل آمن للباك إند
         });
 
         const result = await response.json();
 
+        // التحقق من نجاح التحديث في قاعدة البيانات
         if (result.status !== 'success') {
             showCustomAlert("⚠️ تحديث حالة الاستجابة الميدانية", "حدث تضارب أثناء مزامنة الإجراء الميداني مع السيرفر السحابي. تم جدولة البلاغ لإعادة المحاولة تلقائياً لتأمين تكامل النظام.");
             return;
         }
 
+        // تحديث مظهر الزر فوراً بعد نجاح المزامنة
         btn.innerText = nextText;
         btn.style.background = nextColor;
 
-        if(nextStatus === 'Responding') {
+        if (nextStatus === 'Responding') {
             const statusDisplay = document.getElementById('unitStatus');
-            if(statusDisplay) {
+            if (statusDisplay) {
                 statusDisplay.innerText = "مشغول (On Call)";
                 statusDisplay.style.color = "#8b0000";
             }

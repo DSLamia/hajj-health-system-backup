@@ -93,7 +93,6 @@ def emergency():
 
 @app.route('/api/update-task', methods=['POST'])
 def update_task():
-    """تحديث حالة البلاغ الميداني مباشرة من السيرفر لتلافي خطأ الـ API Key للمتصفح"""
     try:
         data = request.get_json() or {}
         task_id = data.get('id')
@@ -102,7 +101,7 @@ def update_task():
         if not task_id or not new_status:
             return jsonify({"status": "error", "message": "المعطيات الميدانية غير مكتملة."}), 400
 
-        result = supabase.table('emergency_team').update({"status": new_status}).eq('id', task_id).execute()
+        result = supabase.table('emergency_team').update({"status": new_status}).eq('emergency_id', task_id).execute()
 
         return jsonify({"status": "success", "updated_data": result.data})
     except Exception as e:
