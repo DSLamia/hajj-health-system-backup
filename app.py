@@ -133,10 +133,21 @@ def predict():
 
         # 4. استدعاء مودل  ONNX
         from model_handler import predict_logic
-        heatstroke_count = predict_logic(input_df, temp)
-
+        result = predict_logic(input_df, temp)
         # تصنيف مستوى الخطر بناءً على مخرجات المودل
-        risk_level = "مستقر" if heatstroke_count < 5 else ("متوسط" if heatstroke_count < 15 else "حرج")
+        if isinstance(result, dict):
+            # يبحث عن أي مفتاح يحتوي على النتيجة مثل 'prediction' أو 'heatstroke_count'
+            heatstroke_count = int(result.get('heatstroke_predictions', result.get('prediction', 0)))
+        else:
+            heatstroke_count = int(result)
+
+        # الحساب الصارم لمستوى الخطر بناءً على الرقم الحقيقي المستخرج من المودل
+        if heatstroke_count < 5:
+            risk_level = "مستقر"
+        elif heatstroke_count < 15:
+            risk_level = "متوسط"
+        else:
+            risk_level = "حرج"
 
         return jsonify({
             "status": "success",
@@ -144,7 +155,6 @@ def predict():
             "risk_level": risk_level,
             "recommendations": f"التنبؤ الحالي يسجل {heatstroke_count} حالة إجهاد حراري محتملة في الموقع."
         })
-
     except Exception as main_e:
         # نطبع الخطأ في السيرفر ونرسله للواجهة
         error_msg = f"Inference Error: {str(main_e)}"
