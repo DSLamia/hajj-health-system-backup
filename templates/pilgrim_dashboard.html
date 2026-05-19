@@ -265,9 +265,9 @@ async function fetchPrediction(userId) {
 
         const d = await res.json();
 
-        if(d.status === "success" && d.results) {
-            const risk = d.results.risk_level || 'Low';
-            const color = d.results.risk_color || 'green';
+        if(d.status === "success") {
+            const risk = d.risk_level || 'Low';
+            const color = d.risk_color || 'green';
 
             // 1. تحديث نصوص الألوان ومستوى الخطر في الواجهة
             if (labelEl) {
@@ -286,6 +286,11 @@ async function fetchPrediction(userId) {
                     ptr.style.right = '90%';
                 }
             }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
 
             // 3. استخراج التوصيات الوقائية الحقيقية من المودل
             let h = `<h3 style="color:#8B4513; margin-bottom:15px;"><i class="fas fa-lightbulb"></i> توصية وقائية مخصصة لك</h3>`;

@@ -154,27 +154,26 @@ async function fetchGlobalPrediction() {
         const occRate = Math.round((occupied / total) * 100);
 
         // المسار متوافق مع السيرفر
-        const response = await fetch('/api/predict', {
+  const response = await fetch('/api/predict', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: 'OFFICER-01', target_audience: 'officer', bed_capacity: total, occupied_beds: occupied })
+            body: JSON.stringify({ user_id: 'OFFICER-01', target_audience: 'officer', bed_capacity: totalBeds, occupied_beds: occupiedBeds, temperature: temp, humidity: hum, wind_speed: wind, crowding_density: crowd })
         });
         const d = await response.json();
 
-        if(d.status === "success") {
-            const results = d.results;
+        if (d.status === "success") {
             const riskEl = document.getElementById('riskValue');
-            riskEl.innerText = results.risk_level;
+            riskEl.innerText = d.risk_level;
 
-            riskEl.style.color = (results.risk_level === 'Low') ? 'green' : (results.risk_level === 'Moderate' ? 'orange' : 'red');
+            riskEl.style.color = (d.risk_level === 'Low') ? 'green' : (d.risk_level === 'Moderate') ? 'orange' : 'red';
 
-            let rawRecommendation = results.recommendation;
+            let rawRecommendation = d.recommendations;
             let cleanRec = Array.isArray(rawRecommendation) ? rawRecommendation[0] : rawRecommendation;
 
-            cleanRec = cleanRec.replace(/.*نسبة الإشغال الحالية:.*%.\s*/g, '').replace(/.*حالة النظام مستقرة.\s*/g, '');
+            cleanRec = cleanRec.replace(/.*نسبة الإشغال الحالية.*/g, '').replace(/.*نظام مستقر.*/g, '');
 
             if (!cleanRec.trim()) {
-                cleanRec = results.risk_level === 'Low' ? "الوضع آمن، استمر في المراقبة الروتينية." : "يرجى اتخاذ إجراءات احترازية فوراً.";
+                cleanRec = d.risk_level === 'Low' ? "يرجى اتخاذ إجراءات احترازية فوراً" : ".";
             }
 
             let statusText = "مستقرة";
