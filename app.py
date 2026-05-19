@@ -102,7 +102,7 @@ def predict():
         # جلب بيانات الحاج الحقيقية من Supabase
         if phone_number or is_valid_uuid:
             try:
-                user_query = supabase.table('profiles').select('*')
+                user_query = supabase.table('profiles').select('age, chronic_diseases, disease_type, diet_compliance')
                 if phone_number:
                     user_query = user_query.eq('phone_number', str(phone_number))
                 elif is_valid_uuid:
@@ -122,7 +122,7 @@ def predict():
             except Exception as sb_e:
                 print(f"Supabase context fetch skipped safely: {sb_e}")
 
-        # 2. بناء المصفوفة الـ 11  واستدعاء المودل
+        # 2. بناء Matrix الـ 11 واستدعاء المودل
         features_dict = {
             'Age_Group': [float(age_group_enc)],
             'Crowd_Density': [float(crowd_density)],
@@ -236,7 +236,7 @@ def predict():
                     "توزيع الكثافات البشرية يسير بشكل ممتاز بالتنسيق مع غرف العمليات."
                 ]
 
-        #  
+        #
         return jsonify({
             "status": "success",
             "heatstroke_predictions": heatstroke_count,
@@ -247,6 +247,8 @@ def predict():
 
     except Exception as main_e:
         return jsonify({"status": "error", "message": f"Inference Error: {str(main_e)}"}), 400
+
+
 @app.route('/api/send-report', methods=['POST'])
 def send_report():
     try:
