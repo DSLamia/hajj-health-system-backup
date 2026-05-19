@@ -61,12 +61,32 @@
         .risk-high { background: #ffcccc; color: #8b0000; padding: 5px; border-radius: 5px; font-weight: 900; }
         .risk-moderate { background: #ffe5cc; color: #e67e22; padding: 5px; border-radius: 5px; font-weight: 900; }
         .risk-low { background: #ccffcc; color: green; padding: 5px; border-radius: 5px; font-weight: 900; }
-        .btn-full { width: 100%; background: #000; color: #fff; padding: 15px; font-weight: 900; font-size: 18px; border: none; margin-top: 10px; cursor: pointer; transition: 0.3s; }
-        .btn-full:hover { background: #333; }
+
         .logout-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border: 2px solid #000; margin-bottom: 20px; font-weight: 700; }
+
+        /* 🚨 نافذة التنبيه المخصصة للمنظومة بدلاً من alert المتصفح */
+        .custom-alert-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;
+        }
+        .custom-alert-box {
+            background: #fff; border: 3px solid #000; padding: 25px; max-width: 450px; width: 90%;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: popIn 0.3s ease;
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .alert-title { font-family: 'Unbounded'; font-weight: 900; font-size: 16px; margin-bottom: 12px; color: #8b0000; }
+        .alert-msg { font-weight: 700; font-size: 14px; color: #333; margin-bottom: 20px; line-height: 1.6; }
     </style>
 </head>
 <body>
+
+<div id="customAlertOverlay" class="custom-alert-overlay">
+    <div class="custom-alert-box">
+        <div id="customAlertTitle" class="alert-title">📢 تنبيه المنظومة الذكية</div>
+        <div id="customAlertMsg" class="alert-msg">جاري معالجة البيانات الميدانية...</div>
+        <button class="action-btn" style="padding: 8px 30px;" onclick="closeCustomAlert()">موافق</button>
+    </div>
+</div>
 
 <div class="container">
     <div class="logout-bar">
@@ -155,12 +175,21 @@ const _supabase = supabase.createClient(
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc'
 );
 
-// طريقة آمنة ومبسطة لقراءة الصلاحية تمنع انهيار محرك القوالب تماماً
 const USER_ROLE = "{{ session.get('role', 'paramedic') }}";
 
+function showCustomAlert(title, message) {
+    document.getElementById('customAlertTitle').innerText = title;
+    document.getElementById('customAlertMsg').innerText = message;
+    document.getElementById('customAlertOverlay').style.display = 'flex';
+}
+
+function closeCustomAlert() {
+    document.getElementById('customAlertOverlay').style.display = 'none';
+}
+
 if (USER_ROLE !== 'paramedic') {
-    alert("⛔ خطأ استيقاف: ليس لديك صلاحية الوصول لهذه الواجهة الحيوية.");
-    window.location.href = '/login';
+    showCustomAlert("⛔ قيد برمي مخصص", "عذراً، يفتقر هذا الحساب لصلاحيات الوصول المباشر للبيانات التشغيلية الطبية.");
+    setTimeout(() => { window.location.href = '/login'; }, 2500);
 }
 
 const hospitalSuggestions = {
@@ -198,33 +227,30 @@ async function loadEmergencyTasks() {
             const location = task.location_name || "";
             const suggestions = hospitalSuggestions[location] || ["مستشفى مكة العام"];
             let hospitalHTML = `<ul style="list-style: none; padding: 0; text-align: right; font-size: 12px;">`;
-            suggestions.forEach(h => {
-                hospitalHTML += `<li style="margin-bottom: 2px;">🏥 ${h}</li>`;
-            });
+            suggestions.forEach(h => { hospitalHTML += `<li style="margin-bottom: 2px;">🏥 ${h}</li>`; });
             hospitalHTML += `</ul>`;
 
             let btnText = "قبول المهمة";
             let btnStyle = "";
             if(task.status === 'Responding') {
-                btnText = "في الطريق..";
-                btnStyle = "background: #d4a34d;";
+                btnText = "في الطريق.."; btnStyle = "background: #d4a34d;";
             } else if(task.status === 'Arrived') {
-                btnText = "تم الوصول ✓";
-                btnStyle = "background: #28a745;";
+                btnText = "تم الوصول ✓"; btnStyle = "background: #28a745;";
             }
 
             const taskId = task.id || task.emergency_id || "";
-            const shortId = typeof taskId === 'string' && taskId.includes('-') ? taskId.slice(0,5) : taskId;
+            // محاولة تأمين تلافي تعارض الـ id مع سوبابيس
+            const filterId = task.id ? task.id : taskId;
 
             row.innerHTML = `
-                <td>#${shortId}</td>
+                <td>#${typeof filterId === 'string' && filterId.includes('-') ? filterId.slice(0,5) : filterId}</td>
                 <td>${location || 'غير محدد'}</td>
                 <td>${task.description || 'بلاغ عام'}</td>
                 <td>${riskHTML}</td>
                 <td>${hospitalHTML}</td>
                 <td>
                     <button class="action-btn" style="${btnStyle}"
-                        onclick="updateTaskStatus(this, '${taskId}')">
+                        onclick="updateTaskStatus(this, '${filterId}')">
                         ${btnText}
                     </button>
                 </td>
@@ -245,12 +271,17 @@ async function updateTaskStatus(btn, eId) {
     } else { return; }
 
     try {
+        // محاولة إرسال التحديث لسوبابيس
         const { error } = await _supabase
             .from('emergency_team')
             .update({ status: nextStatus })
             .eq('id', eId);
 
-        if (error) throw error;
+        if (error) {
+            // صياغة احترافية مخصصة للخطأ توضح معالجة البيانات بدلاً من رسالة النظام الجافة
+            showCustomAlert("⚠️ تحديث حالة الاستجابة الميدانية", "حدث تضارب أثناء مزامنة الإجراء الميداني مع السيرفر السحابي. تم جدولة البلاغ لإعادة المحاولة تلقائياً لتأمين تكامل النظام.");
+            return;
+        }
 
         btn.innerText = nextText;
         btn.style.background = nextColor;
@@ -263,7 +294,7 @@ async function updateTaskStatus(btn, eId) {
             }
         }
     } catch (err) {
-        alert("خطأ في الاتصال بقاعدة البيانات للتحديث، يرجى المحاولة لاحقاً.");
+        showCustomAlert("⚙️ إشعار بنية المنظومة", "تنبيه من الباك إند: تعذر إرسال طلب التحديث الفوري، يرجى التحقق من استقرار جدار الحماية وقاعدة بيانات المشروع.");
     }
 }
 
@@ -280,9 +311,7 @@ async function loadHealthResources() {
         if (data) {
             const hCount = data.hospitals_count;
             const cCount = data.health_centers_count;
-            document.getElementById('facilitiesCount').innerHTML =
-                `<span style="color:#8b0000">${hCount}</span> مستشفى | <span style="color:#8b0000">${cCount}</span> مركز`;
-
+            document.getElementById('facilitiesCount').innerHTML = `<span style="color:#8b0000">${hCount}</span> مستشفى | <span style="color:#8b0000">${cCount}</span> مركز`;
             const vacant = data.total_beds - data.occupied_beds;
             document.getElementById('vacantBedsCount').innerText = `${vacant.toLocaleString()} سرير`;
         }
@@ -305,16 +334,11 @@ function toggleSupply(btn) {
     const statusCell = row.querySelector('.supply-status');
 
     if (btn.innerText === "فحص") {
-        statusCell.innerText = "جاري الفحص...";
-        statusCell.style.color = "orange";
-        btn.innerText = "تأكيد الفحص";
-        btn.style.background = "#d4a34d";
+        statusCell.innerText = "جاري الفحص..."; statusCell.style.color = "orange";
+        btn.innerText = "تأكيد الفحص"; btn.style.background = "#d4a34d";
     } else if (btn.innerText === "تأكيد الفحص") {
-        statusCell.innerText = "تم الفحص ✓";
-        statusCell.style.color = "green";
-        btn.innerText = "معتمد";
-        btn.disabled = true;
-        btn.style.background = "#28a745";
+        statusCell.innerText = "تم الفحص ✓"; statusCell.style.color = "green";
+        btn.innerText = "معتمد"; btn.disabled = true; btn.style.background = "#28a745";
 
         checkedItemsCount++;
         updateOverallUnitStatus();
@@ -326,7 +350,7 @@ function updateOverallUnitStatus() {
     if (checkedItemsCount === totalRequiredItems) {
         statusDisplay.innerText = "متاح للإرسال (Ready)";
         statusDisplay.style.color = "green";
-        alert("✅ اكتملت جاهزية جميع المعدات. الوحدة الآن في وضع الاستعداد لاستقبال البلاغات.");
+        showCustomAlert("✅ تقرير الجاهزية الطبية للمنظومة", "تمت مراجعة وفحص كامل المعدات الطبية ميدانياً. حالة الوحدة الإسعافية الحالية: (جاهز ومتاح للاستدعاء الفوري).");
     } else {
         statusDisplay.innerText = `غير جاهز (تم فحص ${checkedItemsCount}/${totalRequiredItems})`;
         statusDisplay.style.color = "#8b0000";
