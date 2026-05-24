@@ -60,7 +60,7 @@
         .marquee-content span.unit-text { font-size: 1.1rem; font-weight: 700; opacity: 0.95; color: white; }
         .marquee-content span.unit-number { font-size: 1.4rem; font-weight: 900; margin-right: 12px; background: rgba(255, 255, 255, 0.2); padding: 2px 10px; border-radius: 8px; color: white; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        .back-btn-container { text-align: center; margin-top: -20px; }
+        .back-btn-container { text-align: center; margin-top: 20px; margin-bottom: 20px; position: relative; z-index: 10; }
         .elegant-back-btn { display: inline-block; padding: 16px 40px; background: #000000; color: #ffffff; text-decoration: none; border-radius: 30px; font-weight: 700; border: none; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         .elegant-back-btn:hover { background: #333; transform: translateY(-2px); }
         .update-time { font-size: 0.8rem; color: #666; margin-top: 15px; text-align: left; }
@@ -230,6 +230,12 @@
                 </div>
                 <div class="recommendations-panel"><div id="dynamicRec">جاري التجهيز...</div></div>
             </div>
+            <div class="back-btn-container">
+    <a href="{{ url_for('index') }}" class="elegant-back-btn">
+        <i class="fas fa-arrow-right"></i>
+        العودة إلى الصفحة الرئيسية
+    </a>
+</div>
             <div id="emergencyBar">
                 <div class="marquee-content">
                     <div class="emergency-unit"><i class="fas fa-phone-alt"></i><span class="unit-text">الطوارئ:</span><span class="unit-number">911</span></div>
@@ -238,13 +244,6 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="back-btn-container">
-    <a href="{{ url_for('index') }}" class="elegant-back-btn">
-        <i class="fas fa-arrow-right"></i>
-        العودة إلى الصفحة الرئيسية
-    </a>
 </div>
 <div id="customAlert" class="custom-alert-overlay">
     <div id="customAlert" class="custom-alert-overlay">
@@ -413,6 +412,7 @@ function showMainApp(user) {
 
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
+    document.querySelector('.back-btn-container').style.display = 'block';
     document.getElementById('emergencyBar').style.display = 'flex';
 
     updateDateTime();
