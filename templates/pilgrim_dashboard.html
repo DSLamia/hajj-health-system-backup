@@ -65,6 +65,7 @@
         .elegant-back-btn:hover { background: #333; transform: translateY(-2px); }
         .update-time { font-size: 0.8rem; color: #666; margin-top: 15px; text-align: left; }
 
+        /* Custom Alert Styles */
         .custom-alert-overlay {
             position: fixed;
             top: 0;
@@ -79,7 +80,6 @@
             z-index: 99999;
             animation: fadeIn 0.3s ease;
         }
-
         .custom-alert-box {
             background: #ffffff;
             width: 90%;
@@ -92,14 +92,12 @@
             transform: scale(0.9);
             transition: transform 0.3s ease;
         }
-
         .custom-alert-title {
             font-size: 1.4rem;
             font-weight: 800;
             color: #111;
             margin-bottom: 15px;
         }
-
         .custom-alert-message {
             font-size: 1.05rem;
             color: #444;
@@ -107,7 +105,6 @@
             margin-bottom: 25px;
             font-weight: 600;
         }
-
         .custom-alert-btn {
             background: #000000;
             color: #ffffff;
@@ -119,11 +116,9 @@
             cursor: pointer;
             transition: 0.2s;
         }
-
         .custom-alert-btn:hover {
             background: #333333;
         }
-
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -231,21 +226,21 @@
                 <div class="recommendations-panel"><div id="dynamicRec">جاري التجهيز...</div></div>
             </div>
             <div class="back-btn-container">
-    <a href="{{ url_for('index') }}" class="elegant-back-btn">
-        <i class="fas fa-arrow-right"></i>
-        العودة إلى الصفحة الرئيسية
-    </a>
-</div>
+                <a href="{{ url_for('index') }}" class="elegant-back-btn">
+                    <i class="fas fa-arrow-right"></i>
+                    العودة إلى الصفحة الرئيسية
+                </a>
+            </div>
             <div id="emergencyBar">
                 <div class="marquee-content">
                     <div class="emergency-unit"><i class="fas fa-phone-alt"></i><span class="unit-text">الطوارئ:</span><span class="unit-number">911</span></div>
                     <div class="emergency-unit"><i class="fas fa-ambulance"></i><span class="unit-text">الإسعاف:</span><span class="unit-number">997</span></div>
                     <div class="emergency-unit"><i class="fas fa-fire-extinguisher"></i><span class="unit-text">الدفاع المدني:</span><span class="unit-number">998</span></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<div id="customAlert" class="custom-alert-overlay">
+
     <div id="customAlert" class="custom-alert-overlay">
         <div class="custom-alert-box" id="customAlertBox">
             <div class="custom-alert-title" id="customAlertTitle">تنبيه النظام</div>
@@ -452,11 +447,16 @@ document.getElementById('entryBtn').addEventListener('click', async () => {
     } else {
         if (!name) { showCustomAlert("⚠️ حقل مطلوب", "يرجى إدخال الاسم الكامل أولاً"); return; }
 
-        let { data: existing } = await _supabase
+        let { data: existing, error: fetchError } = await _supabase
             .from('profiles')
             .select('phone_number')
             .eq('phone_number', phone)
             .maybeSingle();
+
+        if (fetchError) {
+            showCustomAlert("⚙️ خطأ في النظام", "حدث خلل أثناء التحقق من الرقم المسبق.");
+            return;
+        }
 
         if (existing) {
             showCustomAlert("🗂️ حساب مسجل", "هذا الرقم مسجل مسبقاً! يرجى الانتقال لوضع تسجيل الدخول.");
