@@ -59,61 +59,17 @@
             transition: transform 0.3s ease;
         }
 
-        .custom-alert-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: #111;
-            margin-bottom: 15px;
-        }
+        .custom-alert-title { font-size: 1.4rem; font-weight: 800; color: #111; margin-bottom: 15px; }
+        .custom-alert-message { font-size: 1.05rem; color: #444; line-height: 1.6; margin-bottom: 25px; font-weight: 600; }
+        .custom-alert-btn { background: #000000; color: #ffffff; border: none; padding: 12px 35px; border-radius: 50px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .custom-alert-btn:hover { background: #333333; }
 
-        .custom-alert-message {
-            font-size: 1.05rem;
-            color: #444;
-            line-height: 1.6;
-            margin-bottom: 25px;
-            font-weight: 600;
-        }
-
-        .custom-alert-btn {
-            background: #000000;
-            color: #ffffff;
-            border: none;
-            padding: 12px 35px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .custom-alert-btn:hover {
-            background: #333333;
-        }
         .back-to-home {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-
-    background: rgba(0,0,0,0.65);
-    color: #ffffff;
-    text-decoration: none;
-
-    padding: 12px 30px;
-    border-radius: 30px;
-
-    font-weight: 700;
-    font-size: 14px;
-
-    margin-top: 25px;
-}
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(0,0,0,0.65); color: #ffffff; text-decoration: none;
+            padding: 12px 30px; border-radius: 30px; font-weight: 700; font-size: 14px; margin-top: 25px;
         }
-
-.back-to-home:hover {
-    background: rgba(0,0,0,0.8);
-    color: #ffffff;
-    text-decoration: none;
-}
+        .back-to-home:hover { background: rgba(0,0,0,0.8); color: #ffffff; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -125,27 +81,31 @@
     </div>
 
     <div id="homeSection" class="page-section active-section">
-        <h1 style="text-align: center; font-family: 'Unbounded'; margin-bottom: 30px; font-weight: 900;">نظام إدارة مكة الذكي - مركز الطوارئ</h1>
+        <h1 style="text-align: center; font-family: 'Unbounded'; margin-bottom: 30px; font-weight: 900;">نظام إدارة مكة الذكي - micro-service مركز الطوارئ</h1>
+
         <div class="metrics-grid">
             <div class="metric-card"><div class="metric-label">المخاطر</div><div id="riskValue" class="metric-value">--</div></div>
             <div class="metric-card"><div class="metric-label">الكثافة</div><div id="densityValue" class="metric-value">Normal</div></div>
             <div class="metric-card"><div class="metric-label">الرطوبة</div><div id="humidityValue" class="metric-value">--%</div></div>
             <div class="metric-card"><div class="metric-label">الحرارة</div><div id="tempValue" class="metric-value">--°C</div></div>
         </div>
+
         <div class="card-box" style="border-right: 10px solid #8b0000;">
             <div class="section-header" style="background: #8b0000;">توجيهات الميدان النشطة</div>
             <div id="emergencyDirections"><div class="list-item">جاري تحليل البيانات من خادم مكة الذكي...</div></div>
         </div>
+
         <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
             <button class="btn-black" onclick="togglePage('reportFormSection')">تقديم تقرير</button>
             <button class="btn-black" onclick="togglePage('reportsListSection')">التقارير الحالية</button>
             <button class="btn-black" onclick="togglePage('statsSection')">الإحصائيات</button>
-            <div style="text-align:center; width:100%; margin-top:25px;">
-                <a href="/" class="back-to-home">
-                    <i class="fas fa-arrow-right"></i>
-    العودة الى الصفحة الرئيسية   
-</a>
-</div> 
+        </div>
+
+        <div style="text-align:center; width:100%; margin-top:25px;">
+            <a href="/" class="back-to-home">العودة الى الصفحة الرئيسية</a>
+        </div>
+    </div>
+
     <div id="reportFormSection" class="page-section">
         <div class="card-box" style="max-width: 600px; margin: 0 auto;">
             <div class="section-header">رفع بلاغ ميداني</div>
@@ -171,7 +131,7 @@
                 <label style="font-weight:900">الوصف</label>
                 <textarea id="repDesc" class="form-control" rows="3"></textarea>
             </div>
-            <button class="btn-black" style="width:100%" onclick="submitReport()">إرسال</button>
+            <button class="btn-black" style="width:100%" onclick="submitReport()">إرسال البلاغ فوراً</button>
             <button class="btn-black" style="width:100%; margin-top:10px; background:#666; border-color:#666;" onclick="togglePage('homeSection')">رجوع</button>
         </div>
     </div>
@@ -183,7 +143,7 @@
             <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
                 <label style="font-weight: 900;">عدد الأسرة المشغولة:</label>
                 <input type="number" id="bedInput" class="form-control" style="width: 120px;" value="120">
-                <button class="btn-black" onclick="updateBedStats()">تحديث</button>
+                <button class="btn-black" onclick="updateBedStats()">تحديث في سوبابيز</button>
             </div>
         </div>
         <div class="metrics-grid">
@@ -235,14 +195,12 @@ const _supabase = supabase.createClient(
 
 const USER_ROLE = "{{ session.get('role', 'officer') }}";
 
-// دوال تشغيل وإغلاق التنبيه المخصص الموحد
 function showCustomAlert(title, message, redirectUrl = null) {
     document.getElementById('customAlertTitle').innerText = title;
     document.getElementById('customAlertMessage').innerText = message;
     const alertOverlay = document.getElementById('customAlert');
     alertOverlay.style.display = 'flex';
 
-    // الاحتفاظ برابط التوجيه إن وجد في خاصية مؤقتة داخل الزر
     const btn = document.querySelector('.custom-alert-btn');
     if (redirectUrl) {
         btn.setAttribute('data-redirect', redirectUrl);
@@ -327,7 +285,7 @@ async function fetchGlobalPrediction() {
             }
 
             if (!cleanRec || !cleanRec.trim()) {
-                cleanRec = d.risk_level === 'Low' ? "يرجى اتخاذ إجراءات احترازية فوراً" : ".";
+                cleanRec = d.risk_level === 'Low' ? "يرجى اتخاذ إجراءات احترازية فوراً" : "مراقبة المؤشرات الحيوية بشكل مستمر.";
             }
 
             let statusText = "مستقرة"; let statusEmoji = "🟢"; let statusColor = "green";

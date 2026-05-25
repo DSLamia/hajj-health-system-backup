@@ -8,8 +8,10 @@ import os
 app = Flask(__name__)
 CORS(app)
 
+# مفتاح تشغيل الجلسات الآمن
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'mecca_secure_health_key_2026')
 
+# إعدادات الاتصال المباشر بقاعدة بيانات المشروع
 SUPABASE_URL = "https://rmpmbnmmgxsbxcvcbkwb.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcG1ibm1tZ3hzYnhjdmNia3diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODcwMzgsImV4cCI6MjA4NzM2MzAzOH0.Piu2jTOwdfihFgEsELJyTHXChGgV95abKAy4-9lsAHc"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -98,7 +100,8 @@ def update_task():
         if not task_id or not new_status:
             return jsonify({"status": "error", "message": "المعطيات الميدانية غير مكتملة."}), 400
 
-        result = supabase.table('emergency_team').update({"status": new_status}).eq('emergency_id', task_id).execute()
+        # ✨ تم التعديل هنا: الفلترة باستخدام معرف البلاغ الموحد لتفادي تعليق أزرار الجداول أونلاين
+        result = supabase.table('emergency_team').update({"status": new_status}).eq('id', task_id).execute()
 
         return jsonify({"status": "success", "updated_data": result.data})
     except Exception as e:
@@ -184,16 +187,9 @@ def predict():
         if str(target_audience).lower() == "pilgrim":
             p_risk_points = 0
             disease_weights = {
-                "heart": 4,
-                "asthma": 3.5,
-                "hypertension": 3,
-                "neurological": 2.5,
-                "diabetes1": 2,
-                "diabetes2": 2,
-                "cancer": 1.5,
-                "hepatitis": 1,
-                "rheumatism": 1,
-                "none": 0
+                "heart": 4, "asthma": 3.5, "hypertension": 3, "neurological": 2.5,
+                "diabetes1": 2, "diabetes2": 2, "cancer": 1.5, "hepatitis": 1,
+                "rheumatism": 1, "none": 0
             }
 
             if has_chronic:
@@ -299,6 +295,8 @@ def send_report():
             "system_exception": str(e)
         }), 400
 
+
+app = app
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
